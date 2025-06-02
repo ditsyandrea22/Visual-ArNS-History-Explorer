@@ -35,27 +35,21 @@ function shortenAddr(addr: string) {
   if (!addr) return "-";
   return addr.length > 12 ? addr.slice(0, 6) + "..." + addr.slice(-4) : addr;
 }
-
-// Only allow .ar.io names and Arweave addresses
 function isArIoName(val: string) {
   return val.trim().toLowerCase().endsWith(".ar.io");
 }
 function arIoToAr(val: string) {
-  // Converts permaweb.ar.io -> permaweb.ar for backend
   return val.trim().toLowerCase().replace(/\.ar\.io$/, ".ar");
 }
 function arIoToManageName(val: string) {
-  // Converts permaweb.ar.io -> permaweb for manage link
   return val.trim().toLowerCase().replace(/\.ar\.io$/, "");
 }
 function arToArIo(val: string) {
-  // Converts permaweb.ar -> permaweb.ar.io for display
   return val.trim().toLowerCase().endsWith(".ar")
     ? val.trim().slice(0, -3) + ".ar.io"
     : val.trim();
 }
 function arToManageName(val: string) {
-  // Converts permaweb.ar -> permaweb for manage link
   return val.trim().toLowerCase().endsWith(".ar")
     ? val.trim().slice(0, -3)
     : val.trim();
@@ -64,13 +58,15 @@ function isArweaveAddress(val: string) {
   return /^[a-z0-9_-]{43,}$/i.test(val.trim());
 }
 
+const Spinner: React.FC<{ darkMode: boolean }> = ({ darkMode }) => (
+  <span className={`spinner${darkMode ? " dark" : ""}`} aria-label="Loading" />
+);
+
 const App: React.FC = () => {
-  // Wallet state
   const [walletDetected, setWalletDetected] = useState(false);
   const [walletConnected, setWalletConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
-  // Search/filter state
   const [input, setInput] = useState("");
   const [filterResolver, setFilterResolver] = useState("");
   const [filterExpiryFrom, setFilterExpiryFrom] = useState("");
@@ -81,7 +77,25 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<HistoryEvent[]>([]);
   const [selectedName, setSelectedName] = useState<string | null>(null);
 
-  // Detect ArConnect wallet
+  // Dark mode
+  const [darkMode, setDarkMode] = useState(
+    () =>
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+  );
+
+  useEffect(() => {
+    const listener = (e: MediaQueryListEvent) => setDarkMode(e.matches);
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener("change", listener);
+    return () => mq.removeEventListener("change", listener);
+  }, []);
+
+  useEffect(() => {
+    document.body.classList.toggle("dark", darkMode);
+  }, [darkMode]);
+
+  // Wallet detection
   useEffect(() => {
     if (window.arweaveWallet) {
       setWalletDetected(true);
@@ -96,7 +110,6 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Connect wallet
   const connectWallet = async () => {
     setErr(null);
     try {
@@ -110,37 +123,36 @@ const App: React.FC = () => {
     }
   };
 
-  // Disconnect wallet
   const disconnectWallet = () => {
     setWalletConnected(false);
     setWalletAddress(null);
     setInput("");
   };
 
-  // Autofill search when wallet is connected
   useEffect(() => {
     if (walletConnected && walletAddress) {
       setInput(walletAddress);
     }
   }, [walletConnected, walletAddress]);
 
-  // Main search logic (.ar.io only or address)
+  // Interactive effect: focus search input after Connect/Disconnect
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!walletConnected) searchInputRef.current?.focus();
+  }, [walletConnected]);
+
   const handleSearch = async () => {
     setErr(null);
     setNames([]);
     setHistory([]);
     setSelectedName(null);
-
     const query = input.trim();
     if (!query) {
       setErr("Enter an ArNS (.ar.io) name or Arweave wallet address.");
       return;
     }
-
     setLoading(true);
-
     try {
-      // 1. If .ar.io: lookup by name (convert to .ar for backend)
       if (isArIoName(query)) {
         try {
           const arName = arIoToAr(query);
@@ -151,33 +163,38 @@ const App: React.FC = () => {
               name: data.name,
               expiry: data.expiry,
               resolver: data.resolver,
-              txId: data.txId
-            }
+              txId: data.txId,
+            },
           ]);
           setSelectedName(data.name);
           await fetchHistory(data.name);
         } catch (e: any) {
           if (e.response?.status === 404) {
-            setErr(`No ArNS record found for "${query}". Try searching for the wallet address that owns it.`);
+            setErr(
+              `No ArNS record found for "${query}". Try searching for the wallet address that owns it.`
+            );
           } else if (e.response?.status === 400) {
             setErr("Invalid .ar.io name format.");
           } else {
-            setErr("Failed to fetch data: " + (e.response?.data?.message || e.message || "Unknown error"));
+            setErr(
+              "Failed to fetch data: " +
+                (e.response?.data?.message || e.message || "Unknown error")
+            );
           }
         }
-      }
-      // 2. If looks like an Arweave address: lookup by address
-      else if (isArweaveAddress(query)) {
+      } else if (isArweaveAddress(query)) {
         try {
           const url = `${ARNS_API}/names?owner=${encodeURIComponent(query)}`;
           const { data } = await axios.get<OwnerResponse>(url, { timeout: 10000 });
           if (data.names && data.names.length > 0) {
-            setNames(data.names.map(n => ({
-              name: n.name,
-              expiry: n.expiry,
-              resolver: n.resolver,
-              txId: n.txId
-            })));
+            setNames(
+              data.names.map((n) => ({
+                name: n.name,
+                expiry: n.expiry,
+                resolver: n.resolver,
+                txId: n.txId,
+              }))
+            );
           } else {
             setErr("No ArNS (.ar.io) names found for this wallet address.");
           }
@@ -187,12 +204,13 @@ const App: React.FC = () => {
           } else if (e.response?.status === 400) {
             setErr("Invalid wallet address format.");
           } else {
-            setErr("Failed to fetch data: " + (e.response?.data?.message || e.message || "Unknown error"));
+            setErr(
+              "Failed to fetch data: " +
+                (e.response?.data?.message || e.message || "Unknown error")
+            );
           }
         }
-      }
-      // 3. Otherwise: error
-      else {
+      } else {
         setErr("Please enter a valid .ar.io name or Arweave wallet address.");
       }
     } finally {
@@ -200,7 +218,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Get history for a .ar name (with fallback)
   const fetchHistory = async (name: string) => {
     setHistory([]);
     try {
@@ -212,7 +229,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Advanced filters
   const filteredNames = names.filter((n) => {
     if (
       filterResolver &&
@@ -234,7 +250,7 @@ const App: React.FC = () => {
   });
 
   return (
-    <div className="container">
+    <div className={`container${darkMode ? " dark" : ""}`}>
       <header>
         <h1 style={{ color: "#6e8efb" }}>Visual ArNS History Explorer</h1>
         <p>
@@ -270,10 +286,21 @@ const App: React.FC = () => {
             </span>
           )}
         </div>
+        <div style={{ position: "absolute", top: 18, right: 22 }}>
+          <button
+            title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+            aria-label="Toggle dark mode"
+            className="dark-toggle"
+            onClick={() => setDarkMode((d) => !d)}
+          >
+            {darkMode ? "🌙" : "☀️"}
+          </button>
+        </div>
       </header>
       <main>
         <div className="search-bar-section">
           <input
+            ref={searchInputRef}
             type="text"
             placeholder=".ar.io name or wallet address"
             value={input}
@@ -285,10 +312,9 @@ const App: React.FC = () => {
             disabled={loading}
           />
           <button onClick={handleSearch} disabled={loading}>
-            {loading ? "Searching..." : "Search"}
+            {loading ? <Spinner darkMode={darkMode} /> : "Search"}
           </button>
         </div>
-        {/* Advanced Filters */}
         <div className="filter-section">
           <input
             type="text"
@@ -341,12 +367,8 @@ const App: React.FC = () => {
               </thead>
               <tbody>
                 {filteredNames.map((n, idx) => {
-                  const displayName = n.name
-                    ? arToArIo(n.name)
-                    : '';
-                  const manageName = n.name
-                    ? arToManageName(n.name)
-                    : '';
+                  const displayName = n.name ? arToArIo(n.name) : "";
+                  const manageName = n.name ? arToManageName(n.name) : "";
                   return (
                     <tr key={n.name || n.txId || idx}>
                       <td>
@@ -392,7 +414,9 @@ const App: React.FC = () => {
                       <td>
                         {manageName && (
                           <a
-                            href={`https://arns.ar.io/#/manage/names/${encodeURIComponent(manageName)}`}
+                            href={`https://arns.ar.io/#/manage/names/${encodeURIComponent(
+                              manageName
+                            )}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             style={{ color: "#6e8efb", fontWeight: 500 }}
@@ -406,7 +430,7 @@ const App: React.FC = () => {
                 })}
               </tbody>
             </table>
-            <div style={{ margin: "1em 0", color: "#888" }}>
+            <div style={{ margin: "1em 0", color: darkMode ? "#eee" : "#888" }}>
               Showing {filteredNames.length} of {names.length} total
             </div>
           </div>
@@ -417,13 +441,13 @@ const App: React.FC = () => {
             <h2>
               History for{" "}
               <span style={{ color: "#6e8efb" }}>
-                {selectedName && selectedName.toLowerCase().endsWith('.ar')
-                  ? selectedName.slice(0, -3) + '.ar.io'
+                {selectedName && selectedName.toLowerCase().endsWith(".ar")
+                  ? selectedName.slice(0, -3) + ".ar.io"
                   : selectedName}
               </span>
             </h2>
             {history.length === 0 && (
-              <div>No history found for this name.</div>
+              <div className="info-message">No history found for this name.</div>
             )}
             {history.length > 0 && (
               <table className="names-table">
