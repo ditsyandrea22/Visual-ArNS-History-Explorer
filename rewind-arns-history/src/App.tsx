@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./app.css";
 
-// Gateway base URL (from https://docs.ar.io/arns)
-const ARNS_GATEWAY = "https://ar-io.dev/arns";
+// Use the arns.ar.io API for .ar.io names only!
+const ARNS_API = "https://arns.ar.io/api/proxy/arns";
 
 interface NameInfo {
   name: string;
@@ -19,15 +19,49 @@ interface HistoryEvent {
   txid: string;
   summary: string;
 }
+interface HistoryResponse {
+  history: HistoryEvent[];
+}
+interface OwnerResponse {
+  names: NameInfo[];
+}
 
 function formatDate(expiry: string) {
-  if (!expiry) return "-";
+  if (!expiry || isNaN(Number(expiry))) return "-";
   const d = new Date(Number(expiry) * 1000);
   return d.toLocaleDateString();
 }
 function shortenAddr(addr: string) {
   if (!addr) return "-";
   return addr.length > 12 ? addr.slice(0, 6) + "..." + addr.slice(-4) : addr;
+}
+
+// Only allow .ar.io names and Arweave addresses
+function isArIoName(val: string) {
+  return val.trim().toLowerCase().endsWith(".ar.io");
+}
+function arIoToAr(val: string) {
+  // Converts permaweb.ar.io -> permaweb.ar for backend
+  return val.trim().toLowerCase().replace(/\.ar\.io$/, ".ar");
+}
+function arIoToManageName(val: string) {
+  // Converts permaweb.ar.io -> permaweb for manage link
+  return val.trim().toLowerCase().replace(/\.ar\.io$/, "");
+}
+function arToArIo(val: string) {
+  // Converts permaweb.ar -> permaweb.ar.io for display
+  return val.trim().toLowerCase().endsWith(".ar")
+    ? val.trim().slice(0, -3) + ".ar.io"
+    : val.trim();
+}
+function arToManageName(val: string) {
+  // Converts permaweb.ar -> permaweb for manage link
+  return val.trim().toLowerCase().endsWith(".ar")
+    ? val.trim().slice(0, -3)
+    : val.trim();
+}
+function isArweaveAddress(val: string) {
+  return /^[a-z0-9_-]{43,}$/i.test(val.trim());
 }
 
 const App: React.FC = () => {
@@ -37,7 +71,7 @@ const App: React.FC = () => {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
   // Search/filter state
-  const [input, setInput] = useState(""); // Raw input
+  const [input, setInput] = useState("");
   const [filterResolver, setFilterResolver] = useState("");
   const [filterExpiryFrom, setFilterExpiryFrom] = useState("");
   const [filterExpiryTo, setFilterExpiryTo] = useState("");
@@ -69,9 +103,9 @@ const App: React.FC = () => {
       await window.arweaveWallet?.connect(["ACCESS_ADDRESS"]);
       const address = await window.arweaveWallet?.getActiveAddress();
       setWalletConnected(true);
-      setWalletAddress(address ?? null); // FIX: ensure type matches string | null
-      setInput(address ?? "");           // FIX: ensure type matches string
-    } catch (e: any) {
+      setWalletAddress(address ?? null);
+      setInput(address ?? "");
+    } catch {
       setErr("Failed to connect ArConnect wallet.");
     }
   };
@@ -90,70 +124,102 @@ const App: React.FC = () => {
     }
   }, [walletConnected, walletAddress]);
 
-  // Search ArNS names (GATEWAY-based)
+  // Main search logic (.ar.io only or address)
   const handleSearch = async () => {
     setErr(null);
     setNames([]);
     setHistory([]);
     setSelectedName(null);
-    if (!input.trim()) {
-      setErr("Enter a .ar name or owner address");
+
+    const query = input.trim();
+    if (!query) {
+      setErr("Enter an ArNS (.ar.io) name or Arweave wallet address.");
       return;
     }
+
     setLoading(true);
+
     try {
-      let response;
-      // .ar name
-      if (input.endsWith(".ar")) {
-        response = await axios.get(`${ARNS_GATEWAY}/names/${input.toLowerCase()}`);
-        if (response.data?.name) {
-          setNames([{
-            name: response.data.name,
-            expiry: response.data.expiry,
-            resolver: response.data.resolver,
-            txId: response.data.txId,
-          }]);
-          setSelectedName(response.data.name);
-          await fetchHistory(response.data.name);
-        } else {
-          setErr("No record found for that name.");
-        }
-      } else {
-        // Owner address (returns all names for that owner)
-        response = await axios.get(`${ARNS_GATEWAY}/names?owner=${input}`);
-        if (response.data?.names?.length > 0) {
-          const nList: NameInfo[] = response.data.names.map((n: any) => ({
-            name: n.name,
-            expiry: n.expiry,
-            resolver: n.resolver,
-            txId: n.txId,
-          }));
-          setNames(nList);
-        } else {
-          setErr("No ArNS names found for this address.");
+      // 1. If .ar.io: lookup by name (convert to .ar for backend)
+      if (isArIoName(query)) {
+        try {
+          const arName = arIoToAr(query);
+          const url = `${ARNS_API}/names/${encodeURIComponent(arName)}`;
+          const { data } = await axios.get<NameInfo>(url, { timeout: 10000 });
+          setNames([
+            {
+              name: data.name,
+              expiry: data.expiry,
+              resolver: data.resolver,
+              txId: data.txId
+            }
+          ]);
+          setSelectedName(data.name);
+          await fetchHistory(data.name);
+        } catch (e: any) {
+          if (e.response?.status === 404) {
+            setErr(`No ArNS record found for "${query}". Try searching for the wallet address that owns it.`);
+          } else if (e.response?.status === 400) {
+            setErr("Invalid .ar.io name format.");
+          } else {
+            setErr("Failed to fetch data: " + (e.response?.data?.message || e.message || "Unknown error"));
+          }
         }
       }
-    } catch (e: any) {
-      setErr("Failed to fetch data: " + (e.response?.data?.message || e.message));
+      // 2. If looks like an Arweave address: lookup by address
+      else if (isArweaveAddress(query)) {
+        try {
+          const url = `${ARNS_API}/names?owner=${encodeURIComponent(query)}`;
+          const { data } = await axios.get<OwnerResponse>(url, { timeout: 10000 });
+          if (data.names && data.names.length > 0) {
+            setNames(data.names.map(n => ({
+              name: n.name,
+              expiry: n.expiry,
+              resolver: n.resolver,
+              txId: n.txId
+            })));
+          } else {
+            setErr("No ArNS (.ar.io) names found for this wallet address.");
+          }
+        } catch (e: any) {
+          if (e.response?.status === 404) {
+            setErr("No ArNS (.ar.io) names found for this wallet address.");
+          } else if (e.response?.status === 400) {
+            setErr("Invalid wallet address format.");
+          } else {
+            setErr("Failed to fetch data: " + (e.response?.data?.message || e.message || "Unknown error"));
+          }
+        }
+      }
+      // 3. Otherwise: error
+      else {
+        setErr("Please enter a valid .ar.io name or Arweave wallet address.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Get history for a .ar name
+  // Get history for a .ar name (with fallback)
   const fetchHistory = async (name: string) => {
     setHistory([]);
     try {
-      const resp = await axios.get(`${ARNS_GATEWAY}/names/${name}/history`);
-      setHistory(resp.data?.history ?? []);
+      const url = `${ARNS_API}/names/${encodeURIComponent(name)}/history`;
+      const { data } = await axios.get<HistoryResponse>(url, { timeout: 10000 });
+      setHistory(data?.history ?? []);
     } catch {
       setHistory([]);
     }
   };
 
   // Advanced filters
-  const filteredNames = names.filter(n => {
-    if (filterResolver && (!n.resolver || !n.resolver.toLowerCase().includes(filterResolver.toLowerCase()))) return false;
+  const filteredNames = names.filter((n) => {
+    if (
+      filterResolver &&
+      (!n.resolver ||
+        !n.resolver.toLowerCase().includes(filterResolver.toLowerCase()))
+    )
+      return false;
     if (filterExpiryFrom) {
       const expiryDate = new Date(Number(n.expiry) * 1000);
       const fromDate = new Date(filterExpiryFrom);
@@ -170,16 +236,18 @@ const App: React.FC = () => {
   return (
     <div className="container">
       <header>
-        <h1>Visual ArNS History Explorer</h1>
+        <h1 style={{ color: "#6e8efb" }}>Visual ArNS History Explorer</h1>
         <p>
-          Search for an <b>Arweave Name (.ar)</b> or owner address.<br />
+          Search for an <b>Arweave Name (.ar.io)</b> or wallet address.<br />
           Connect your wallet to autofill your address and quickly view your names.
         </p>
         <div className="wallet-section">
           {walletDetected ? (
             walletConnected && walletAddress ? (
               <div>
-                <span><b>Wallet:</b> {shortenAddr(walletAddress)} </span>
+                <span>
+                  <b>Wallet:</b> {shortenAddr(walletAddress)}{" "}
+                </span>
                 <button className="wallet-btn" onClick={disconnectWallet}>
                   Disconnect
                 </button>
@@ -191,9 +259,14 @@ const App: React.FC = () => {
             )
           ) : (
             <span style={{ color: "#888" }}>
-              <a href="https://arconnect.io/" target="_blank" rel="noopener noreferrer">
+              <a
+                href="https://arconnect.io/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Install ArConnect
-              </a> to connect wallet
+              </a>{" "}
+              to connect wallet
             </span>
           )}
         </div>
@@ -202,10 +275,12 @@ const App: React.FC = () => {
         <div className="search-bar-section">
           <input
             type="text"
-            placeholder=".ar name or owner address"
+            placeholder=".ar.io name or wallet address"
             value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter") handleSearch(); }}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSearch();
+            }}
             autoFocus
             disabled={loading}
           />
@@ -219,7 +294,7 @@ const App: React.FC = () => {
             type="text"
             placeholder="Resolver address filter"
             value={filterResolver}
-            onChange={e => setFilterResolver(e.target.value)}
+            onChange={(e) => setFilterResolver(e.target.value)}
             disabled={names.length === 0}
             style={{ width: 180 }}
           />
@@ -227,14 +302,14 @@ const App: React.FC = () => {
           <input
             type="date"
             value={filterExpiryFrom}
-            onChange={e => setFilterExpiryFrom(e.target.value)}
+            onChange={(e) => setFilterExpiryFrom(e.target.value)}
             disabled={names.length === 0}
           />
           <span style={{ marginLeft: 10, marginRight: 8 }}>to</span>
           <input
             type="date"
             value={filterExpiryTo}
-            onChange={e => setFilterExpiryTo(e.target.value)}
+            onChange={(e) => setFilterExpiryTo(e.target.value)}
             disabled={names.length === 0}
           />
           <button
@@ -265,32 +340,70 @@ const App: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredNames.map(n => (
-                  <tr key={n.name}>
-                    <td>
-                      <button
-                        className={`link-btn${selectedName === n.name ? " selected" : ""}`}
-                        onClick={() => { setSelectedName(n.name); fetchHistory(n.name); }}
-                      >
-                        {n.name}
-                      </button>
-                    </td>
-                    <td>{formatDate(n.expiry)}</td>
-                    <td>
-                      {n.resolver ?
-                        <a href={`https://viewblock.io/arweave/address/${n.resolver}`} target="_blank" rel="noopener noreferrer">{shortenAddr(n.resolver)}</a>
-                        : "-"}
-                    </td>
-                    <td>
-                      {n.txId ?
-                        <a href={`https://viewblock.io/arweave/tx/${n.txId}`} target="_blank" rel="noopener noreferrer">{shortenAddr(n.txId)}</a>
-                        : "-"}
-                    </td>
-                    <td>
-                      <a href={`https://arns.ar.io/#/names/${n.name}`} target="_blank" rel="noopener noreferrer">View</a>
-                    </td>
-                  </tr>
-                ))}
+                {filteredNames.map((n, idx) => {
+                  const displayName = n.name
+                    ? arToArIo(n.name)
+                    : '';
+                  const manageName = n.name
+                    ? arToManageName(n.name)
+                    : '';
+                  return (
+                    <tr key={n.name || n.txId || idx}>
+                      <td>
+                        <button
+                          className={`link-btn${
+                            selectedName === n.name ? " selected" : ""
+                          }`}
+                          onClick={() => {
+                            setSelectedName(n.name);
+                            fetchHistory(n.name);
+                          }}
+                        >
+                          {displayName}
+                        </button>
+                      </td>
+                      <td>{formatDate(n.expiry)}</td>
+                      <td>
+                        {n.resolver ? (
+                          <a
+                            href={`https://viewblock.io/arweave/address/${n.resolver}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {shortenAddr(n.resolver)}
+                          </a>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      <td>
+                        {n.txId ? (
+                          <a
+                            href={`https://viewblock.io/arweave/tx/${n.txId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {shortenAddr(n.txId)}
+                          </a>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      <td>
+                        {manageName && (
+                          <a
+                            href={`https://arns.ar.io/#/manage/names/${encodeURIComponent(manageName)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: "#6e8efb", fontWeight: 500 }}
+                          >
+                            Manage
+                          </a>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             <div style={{ margin: "1em 0", color: "#888" }}>
@@ -301,8 +414,17 @@ const App: React.FC = () => {
 
         {selectedName && (
           <section style={{ marginTop: 32 }}>
-            <h2>History for <span style={{ color: "#6e8efb" }}>{selectedName}</span></h2>
-            {history.length === 0 && <div>No history found for this name.</div>}
+            <h2>
+              History for{" "}
+              <span style={{ color: "#6e8efb" }}>
+                {selectedName && selectedName.toLowerCase().endsWith('.ar')
+                  ? selectedName.slice(0, -3) + '.ar.io'
+                  : selectedName}
+              </span>
+            </h2>
+            {history.length === 0 && (
+              <div>No history found for this name.</div>
+            )}
             {history.length > 0 && (
               <table className="names-table">
                 <thead>
@@ -316,18 +438,30 @@ const App: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {history.map(ev => (
-                    <tr key={ev.txid + ev.timestamp}>
+                  {history.map((ev, idx) => (
+                    <tr key={ev.txid ? ev.txid + String(ev.timestamp) : idx}>
                       <td>{ev.type}</td>
                       <td>{ev.block}</td>
-                      <td>{ev.timestamp ? new Date(ev.timestamp * 1000).toLocaleString() : "-"}</td>
                       <td>
-                        <a href={`https://viewblock.io/arweave/address/${ev.owner}`} target="_blank" rel="noopener noreferrer">
+                        {ev.timestamp
+                          ? new Date(ev.timestamp * 1000).toLocaleString()
+                          : "-"}
+                      </td>
+                      <td>
+                        <a
+                          href={`https://viewblock.io/arweave/address/${ev.owner}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           {shortenAddr(ev.owner)}
                         </a>
                       </td>
                       <td>
-                        <a href={`https://viewblock.io/arweave/tx/${ev.txid}`} target="_blank" rel="noopener noreferrer">
+                        <a
+                          href={`https://viewblock.io/arweave/tx/${ev.txid}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           {shortenAddr(ev.txid)}
                         </a>
                       </td>
@@ -342,14 +476,21 @@ const App: React.FC = () => {
 
         {!loading && !err && names.length === 0 && (
           <div className="info-message">
-            Enter an ArNS (.ar) name or Arweave wallet address, then click Search.<br />
-            Example: <code>ardrive.ar</code> or <code>9d9i9Xr3V...</code>
+            Enter an ArNS (.ar.io) name or Arweave wallet address, then click Search.<br />
+            Example: <code>permaweb.ar.io</code> or <code>9d9i9Xr3V...</code>
           </div>
         )}
       </main>
       <footer>
         <p>
-          Powered by <a href="https://arns.ar.io" target="_blank" rel="noopener noreferrer">Arweave Name Service (AR.IO)</a>
+          Powered by{" "}
+          <a
+            href="https://arns.ar.io"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Arweave Name Service (AR.IO)
+          </a>
         </p>
       </footer>
     </div>
