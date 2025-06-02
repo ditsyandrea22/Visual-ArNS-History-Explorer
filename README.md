@@ -25,7 +25,7 @@
 
 ```bash
 git clone https://github.com/ditsyandrea22/Visual-ArNS-History-Explorer.git
-cd Visual-ArNS-History-Explorer
+cd rewind-arns-history
 npm install
 # or
 yarn install
