@@ -11,6 +11,9 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@arweave-wallet-kit/core": "^0.1.1",
+    "@arweave-wallet-kit/react": "^0.3.2",
+    "arconnect": "^1.0.4",
     "arns-vite-react": "github:ar-io/arns-react",
     "arweave": "^1.15.7",
     "arweave-wallet-connector": "^1.0.2",
