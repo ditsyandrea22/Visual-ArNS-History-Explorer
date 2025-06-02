@@ -7,6 +7,8 @@ export default defineConfig({
     host: true,
     port: 5173,
     strictPort: true,
-    allowedHosts: 'all'
+    allowedHosts: [
+      "5173-ditsyandrea-visualarnsh-lcecqlpduev.ws-us120.gitpod.io"
+    ]
   }
 });
