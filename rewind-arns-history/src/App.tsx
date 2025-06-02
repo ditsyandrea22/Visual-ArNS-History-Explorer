@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArnsHistoryExplorer } from "./components/ArnsHistoryExplorer";
+import { ArnsProfileExplorer } from "./components/ArnsHistoryExplorer";
 
 const App: React.FC = () => {
   const [showHistory, setShowHistory] = useState(false);
@@ -14,7 +14,7 @@ const App: React.FC = () => {
       <button onClick={handleToggleHistory}>
         {showHistory ? "Hide" : "Show"} History Explorer
       </button>
-      {showHistory && <ArnsHistoryExplorer />}
+      {showHistory && <ArnsProfileExplorer />}
     </div>
   );
 };
