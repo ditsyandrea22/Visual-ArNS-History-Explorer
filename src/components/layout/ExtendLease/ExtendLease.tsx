@@ -10,7 +10,7 @@ import Lottie from 'lottie-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { ArweaveTransactionID } from '../../../services/arweave/ArweaveTransactionID';
+// Removed: import { ArweaveTransactionID } from '../../../services/arweave/ArweaveTransactionID';
 import { useGlobalState } from '../../../state/contexts/GlobalState';
 import { useTransactionState } from '../../../state/contexts/TransactionState';
 import { useWalletState } from '../../../state/contexts/WalletState';
@@ -361,9 +361,7 @@ function ExtendLease() {
                     const payload: ExtendLeasePayload = {
                       name,
                       years: newLeaseDuration,
-                      processId: new ArweaveTransactionID(
-                        domainData?.arnsRecord.processId,
-                      ),
+                      processId: domainData?.arnsRecord.processId,
                     };
 
                     dispatchTransactionState({
@@ -399,9 +397,7 @@ function ExtendLease() {
                         assetId: arioProcessId,
                         functionName: 'upgradeName',
                         name,
-                        processId: new ArweaveTransactionID(
-                          domainData.arnsRecord.processId,
-                        ),
+                        processId: domainData.arnsRecord.processId,
 
                         arnsRecord: domainData.arnsRecord,
                         interactionPrice: arioFee,
