@@ -13,7 +13,8 @@ export default defineConfig({
   build: {
     sourcemap: true,
     minify: true,
-    cssMinify: true,
+    // cssMinify is not a valid Vite build option, remove or replace with cssCodeSplit if intended
+    // cssMinify: true,
   },
   plugins: [
     svgr(),
@@ -47,8 +48,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@tests': path.resolve(__dirname) + '/tests',
-      '@src': path.resolve(__dirname) + '/src',
+      '@tests': path.resolve(__dirname, 'tests'),
+      '@src': path.resolve(__dirname, 'src'),
     },
   },
 });
