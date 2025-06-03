@@ -1,86 +1,79 @@
-// src/main.tsx or src/index.tsx
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { ArweaveWalletKit } from '@arweave-wallet-kit/react';
-import App from './App';
-
-// Define the web wallet strategy
 const webWalletStrategy = {
   id: 'webwallet',
   name: 'Arweave.app',
   logo: 'https://arweave.net/izgToJ2N1flzObaeM4TSOLX9EX-R7Z21uDOP4QO7g0A',
   description: 'Web-based Arweave wallet',
-  
-  // Connection methods
+
   connect: async (permissions: string[]) => {
-    if (!window.arweaveWallet) {
-      throw new Error('Arweave wallet extension not detected!');
-    }
+    if (!window.arweaveWallet) throw new Error('Arweave wallet extension not detected!');
     await window.arweaveWallet.connect(permissions);
   },
-  
+
   disconnect: async () => {
-    if (window.arweaveWallet) {
-      await window.arweaveWallet.disconnect();
-    }
+    if (window.arweaveWallet) await window.arweaveWallet.disconnect();
   },
-  
-  // Address methods
+
   getActiveAddress: async () => {
-    if (!window.arweaveWallet) {
-      throw new Error('Wallet not connected!');
-    }
+    if (!window.arweaveWallet) throw new Error('Wallet not connected!');
     return await window.arweaveWallet.getActiveAddress();
   },
-  
+
   getAllAddresses: async () => {
-    if (!window.arweaveWallet) {
-      throw new Error('Wallet not connected!');
-    }
+    if (!window.arweaveWallet) throw new Error('Wallet not connected!');
     return await window.arweaveWallet.getAllAddresses();
   },
-  
-  // Transaction methods
+
   sign: async (transaction: any) => {
-    if (!window.arweaveWallet) {
-      throw new Error('Wallet not connected!');
-    }
+    if (!window.arweaveWallet) throw new Error('Wallet not connected!');
     return await window.arweaveWallet.sign(transaction);
   },
-  
+
   getPublicKey: async () => {
-    if (!window.arweaveWallet) {
-      throw new Error('Wallet not connected!');
-    }
-    // This might vary based on the wallet implementation
+    if (!window.arweaveWallet) throw new Error('Wallet not connected!');
     const activeAddress = await window.arweaveWallet.getActiveAddress();
-    return activeAddress; // This should be replaced with actual public key retrieval
+    return activeAddress;
   },
-  
-  // Other required methods
-  getWalletNames: async () => {
-    return {};
+
+  getWalletNames: async () => ({}),
+
+  getSignature: async () => new Uint8Array(),
+
+  getPermissions: async () => {
+    if (!window.arweaveWallet) throw new Error('Wallet not connected!');
+    if (window.arweaveWallet.getPermissions) return await window.arweaveWallet.getPermissions();
+    return [];
   },
-  
-  getSignature: async () => {
-    return new Uint8Array();
+
+  dispatch: async (...args: any[]) => {
+    if (!window.arweaveWallet?.dispatch) throw new Error('Dispatch not supported by Arweave.app wallet.');
+    return await window.arweaveWallet.dispatch(...args);
+  },
+
+  isAvailable: async () => typeof window !== 'undefined' && !!window.arweaveWallet,
+
+  addAddressEvent: (callback: (address: string) => void) => {
+    if (window.arweaveWallet && window.arweaveWallet.on) {
+      window.arweaveWallet.on('address', callback);
+      return () => {
+        if (window.arweaveWallet && window.arweaveWallet.off) {
+          window.arweaveWallet.off('address', callback);
+        }
+      };
+    }
+    return () => {};
+  },
+
+  removeAddressEvent: (callback: (address: string) => void) => {
+    if (window.arweaveWallet && window.arweaveWallet.off) {
+      window.arweaveWallet.off('address', callback);
+    }
+  },
+
+  // ADD THIS:
+  signDataItem: async (dataItem: any) => {
+    if (!window.arweaveWallet || !window.arweaveWallet.signDataItem) {
+      throw new Error('signDataItem is not supported by this wallet.');
+    }
+    return await window.arweaveWallet.signDataItem(dataItem);
   }
 };
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <ArweaveWalletKit
-      config={{
-        permissions: ['ACCESS_ADDRESS', 'SIGN_TRANSACTION', 'DISPATCH'],
-        strategies: [webWalletStrategy],
-        ensurePermissions: true,
-        appInfo: {
-          name: 'My Arweave App',
-          logo: 'URL_TO_YOUR_APP_LOGO'
-        }
-      }}
-    >
-      <App />
-    </ArweaveWalletKit>
-  </React.StrictMode>
-);
