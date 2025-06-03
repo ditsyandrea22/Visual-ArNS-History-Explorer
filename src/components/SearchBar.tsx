@@ -1,6 +1,15 @@
 import React from 'react';
 
-const SearchBar = ({ 
+type SearchBarProps = {
+  contractId: string;
+  setContractId: (id: string) => void;
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  handleSearch: () => void;
+  isLoading: boolean;
+};
+
+const SearchBar: React.FC<SearchBarProps> = ({ 
   contractId, 
   setContractId, 
   searchTerm, 
@@ -8,7 +17,7 @@ const SearchBar = ({
   handleSearch, 
   isLoading 
 }) => {
-  const handleKeyPress = (e) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleSearch();
     }

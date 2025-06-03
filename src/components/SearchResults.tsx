@@ -1,7 +1,20 @@
 import React from 'react';
 import ResultItem from './ResultItem';
 
-const SearchResults = ({ results, isLoading, totalResults }) => {
+type ResultItemType = {
+  function?: string;
+  txId: string;
+  timestamp: string | number | Date;
+  input?: any;
+};
+
+type SearchResultsProps = {
+  results: ResultItemType[];
+  isLoading: boolean;
+  totalResults: number;
+};
+
+const SearchResults: React.FC<SearchResultsProps> = ({ results, isLoading, totalResults }) => {
   if (isLoading) {
     return <div className="loading">Loading contract history...</div>;
   }

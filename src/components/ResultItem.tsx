@@ -1,7 +1,16 @@
 import React from 'react';
 import { format } from 'date-fns';
 
-const ResultItem = ({ item }) => {
+type ResultItemProps = {
+  item: {
+    function?: string;
+    txId: string;
+    timestamp: string | number | Date;
+    input?: any; // <--- This fixes the error!
+  };
+};
+
+const ResultItem: React.FC<ResultItemProps> = ({ item }) => {
   return (
     <div className="result-item">
       <div className="result-header">

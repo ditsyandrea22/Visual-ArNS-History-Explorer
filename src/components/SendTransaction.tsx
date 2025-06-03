@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
-import { useArweaveWalletKit } from '@arweave-wallet-kit/react';
 import Arweave from 'arweave';
+
+// Type for a wallet that can sign transactions
+type Wallet = {
+  sign: (tx: any) => Promise<void>;
+};
 
 const arweave = Arweave.init({});
 
@@ -8,10 +12,11 @@ interface SendTransactionProps {
   onTransactionSuccess?: (txId: string) => void;
 }
 
-export const SendTransaction: React.FC<SendTransactionProps> = ({ 
-  onTransactionSuccess 
+export const SendTransaction: React.FC<SendTransactionProps> = ({
+  onTransactionSuccess,
 }) => {
-  const walletKit = useArweaveWalletKit();
+  // Replace 'never' with the Wallet type or null
+  const walletKit: { connected: boolean; wallet: Wallet | null } = { connected: false, wallet: null };
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [data, setData] = useState('');
@@ -20,7 +25,7 @@ export const SendTransaction: React.FC<SendTransactionProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!walletKit.connected || !walletKit.wallet) {
       setStatus('Error: Wallet not connected');
       return;
@@ -28,23 +33,19 @@ export const SendTransaction: React.FC<SendTransactionProps> = ({
 
     try {
       setStatus('Preparing transaction...');
-      
-      // Create transaction
+
       const transaction = await arweave.createTransaction({
         target: recipient,
         quantity: arweave.ar.arToWinston(amount),
-        data: data ? new TextEncoder().encode(data) : undefined
+        data: data ? new TextEncoder().encode(data) : undefined,
       });
 
-      // Add tags
       transaction.addTag('App-Name', 'MyArweaveApp');
       transaction.addTag('Content-Type', 'text/plain');
 
-      // Sign transaction
       setStatus('Signing transaction...');
       await walletKit.wallet.sign(transaction);
 
-      // Submit transaction
       setStatus('Sending transaction...');
       const response = await arweave.transactions.post(transaction);
 
@@ -77,7 +78,6 @@ export const SendTransaction: React.FC<SendTransactionProps> = ({
             placeholder="Enter recipient address"
           />
         </div>
-        
         <div className="form-group">
           <label>Amount (AR):</label>
           <input
@@ -90,7 +90,6 @@ export const SendTransaction: React.FC<SendTransactionProps> = ({
             placeholder="Enter amount"
           />
         </div>
-        
         <div className="form-group">
           <label>Data (optional):</label>
           <textarea
@@ -99,27 +98,24 @@ export const SendTransaction: React.FC<SendTransactionProps> = ({
             placeholder="Enter transaction data"
           />
         </div>
-        
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           disabled={!walletKit.connected}
           className="submit-button"
         >
           {walletKit.connected ? 'Send Transaction' : 'Connect Wallet First'}
         </button>
       </form>
-      
       {status && (
         <div className={`status ${status.includes('Error') ? 'error' : 'success'}`}>
           {status}
         </div>
       )}
-      
       {txId && (
         <div className="tx-link">
-          <a 
-            href={`https://viewblock.io/arweave/tx/${txId}`} 
-            target="_blank" 
+          <a
+            href={`https://viewblock.io/arweave/tx/${txId}`}
+            target="_blank"
             rel="noopener noreferrer"
           >
             View Transaction
