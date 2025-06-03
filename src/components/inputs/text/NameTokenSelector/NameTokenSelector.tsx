@@ -4,7 +4,10 @@ import { Pagination, PaginationProps } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 
 import { useIsFocused } from '../../../../hooks';
-import { ArweaveTransactionID } from '../../../../services/arweave/ArweaveTransactionID';
+// import { ArweaveTransactionID } from '../../../../services/arweave/ArweaveTransactionID';
+// Use a type alias instead:
+type ArweaveTransactionID = string;
+
 import { useGlobalState } from '../../../../state/contexts/GlobalState';
 import { useWalletState } from '../../../../state/contexts/WalletState';
 import { AoAddress, VALIDATION_INPUT_TYPES } from '../../../../types';
@@ -60,7 +63,7 @@ function NameTokenSelector({
 
   useEffect(() => {
     selectedTokenCallback(
-      selectedToken ? new ArweaveTransactionID(selectedToken.id) : undefined,
+      selectedToken ? selectedToken.id : undefined
     );
     setListPage(1);
   }, [selectedToken]);
@@ -206,8 +209,9 @@ function NameTokenSelector({
         throw new Error('Unable to get details for Name Tokens');
       }
 
-      const newTokens: NameTokenDetails = contracts.reduce(
-        async (result, contract) => {
+      const newTokens: NameTokenDetails = await contracts.reduce(
+        async (resultPromise, contract) => {
+          const result = await resultPromise;
           const { processId, owner, controllers, name, ticker, names } =
             contract;
 
@@ -222,11 +226,11 @@ function NameTokenSelector({
             },
           };
         },
-        {},
+        Promise.resolve({} as NameTokenDetails),
       );
 
       // HACK: we have nested all Promise.all so await twice to resolve
-      setTokens(await newTokens);
+      setTokens(newTokens);
       if (validImports.length) {
         const details = newTokens[validImports[0].toString()];
         setSelectedToken({
@@ -304,7 +308,7 @@ function NameTokenSelector({
         throw new Error(`No ID provided for ${name ?? ticker ?? ''}`);
       }
       setSelectedToken({ id, name: name ?? '', ticker: ticker ?? '', names });
-      selectedTokenCallback(new ArweaveTransactionID(id));
+      selectedTokenCallback(id);
       setListPage(1);
     } catch (error) {
       eventEmitter.emit('error', error);
@@ -428,7 +432,7 @@ function NameTokenSelector({
               }}
               onClick={() => {
                 getTokenList(walletAddress, [
-                  new ArweaveTransactionID(searchText),
+                  searchText,
                 ]);
               }}
             >
@@ -615,7 +619,7 @@ function NameTokenSelector({
               justifyContent: 'flex-start',
             }}
           >
-            {tokens.length || filteredTokens?.length || !searchText ? (
+            {tokens && (Object.keys(tokens).length || filteredTokens?.length || !searchText) ? (
               <Pagination
                 total={
                   Object.keys(tokens).length && !filteredTokens

@@ -4,6 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { FundingSourceSelector } from './FundingSourceSelector';
 
+// Define a type for details if it is not exported from the component
+type CostDetails = {
+  [key: string]: any;
+};
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -47,7 +52,7 @@ export const BuyRecord: Story = {
       type: 'permabuy',
       fromAddress: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
     },
-    costDetailsCallback: (details) => {
+    costDetailsCallback: (details: CostDetails) => {
       console.log('Cost details:', details);
     },
   },
