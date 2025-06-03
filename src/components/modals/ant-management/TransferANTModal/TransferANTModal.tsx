@@ -3,7 +3,9 @@ import { Checkbox } from 'antd';
 import { useEffect, useState } from 'react';
 
 import { useIsMobile } from '../../../../hooks';
-import { ArweaveTransactionID } from '../../../../services/arweave/ArweaveTransactionID';
+// import { ArweaveTransactionID } from '../../../../services/arweave/ArweaveTransactionID';
+// Use a type alias for compatibility:
+type ArweaveTransactionID = string;
 import { TransferANTPayload, VALIDATION_INPUT_TYPES } from '../../../../types';
 import { formatForMaxCharCount, isValidAoAddress } from '../../../../utils';
 import { InfoIcon } from '../../../icons';

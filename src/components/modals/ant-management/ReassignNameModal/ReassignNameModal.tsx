@@ -7,7 +7,9 @@ import ArweaveID, {
 } from '@src/components/layout/ArweaveID/ArweaveID';
 import { useLatestANTVersion } from '@src/hooks/useANTVersions';
 import useDomainInfo from '@src/hooks/useDomainInfo';
-import { ArweaveTransactionID } from '@src/services/arweave/ArweaveTransactionID';
+// import { ArweaveTransactionID } from '@src/services/arweave/ArweaveTransactionID';
+// Use a type alias for compatibility:
+type ArweaveTransactionID = string;
 import {
   dispatchArNSUpdate,
   useArNSState,
@@ -42,6 +44,9 @@ enum REASSIGN_NAME_WORKFLOWS {
   NEW_EXISTING = 'New with existing configuration.',
   REVIEW = 'Review Reassignment',
 }
+
+// Provide a dummy class for compatibility with code usage of `new ArweaveTransactionID(...)`
+const ArweaveTransactionID = function (id: string) { return id; } as any;
 
 export function ReassignNameModal({
   show,

@@ -2,7 +2,12 @@ import WarningCard from '@src/components/cards/WarningCard/WarningCard';
 import ArweaveID, {
   ArweaveIdTypes,
 } from '@src/components/layout/ArweaveID/ArweaveID';
-import { ArweaveTransactionID } from '@src/services/arweave/ArweaveTransactionID';
+// import { ArweaveTransactionID } from '@src/services/arweave/ArweaveTransactionID';
+// Use a type alias for compatibility:
+type ArweaveTransactionID = string;
+// Add a dummy class for compatibility with `new ArweaveTransactionID(...)`
+const ArweaveTransactionID = function (id: string) { return id; } as any;
+
 import {
   dispatchArNSUpdate,
   useArNSState,
