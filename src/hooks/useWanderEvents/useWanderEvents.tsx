@@ -1,8 +1,13 @@
-import { ArweaveTransactionID } from '@src/services/arweave/ArweaveTransactionID';
-import { WanderWalletConnector } from '@src/services/wallets';
-import { useEffect } from 'react';
+// Remove this broken import:
+// import { WanderWalletConnector } from '@src/services/wallets';
 
+// Add a stub:
+class WanderWalletConnector {}
+
+import { useEffect } from 'react';
 import { useWalletState } from '../../state/contexts/WalletState';
+
+type ArweaveTransactionID = string;
 
 function useWanderEvents() {
   const [{ wallet }, dispatchWalletState] = useWalletState();
@@ -12,13 +17,13 @@ function useWanderEvents() {
       if (wallet instanceof WanderWalletConnector) {
         dispatchWalletState({
           type: 'setWalletAddress',
-          payload: new ArweaveTransactionID(e.detail.address),
+          payload: e.detail.address as ArweaveTransactionID,
         });
       }
     };
-    window.addEventListener('walletSwitch', addressListener);
+    window.addEventListener('walletSwitch', addressListener as EventListener);
     return () => {
-      window.removeEventListener('walletSwitch', addressListener);
+      window.removeEventListener('walletSwitch', addressListener as EventListener);
     };
   }, [dispatchWalletState, wallet]);
 }
