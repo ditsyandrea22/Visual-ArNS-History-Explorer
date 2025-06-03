@@ -1,10 +1,16 @@
 import React, { createContext, useContext, useState } from "react";
 
-// Define ArNSRecord type as needed
-type ArNSRecord = {
-  id: string;
-  domain: string;
-  data: any;
+// AR.IO ARNS registry contract endpoint
+const ARNS_CONTRACT_URL =
+  "https://arweave.net/contract/C9W_ihKf4UoLFjLLP0nIUZ3fXnNq_sQFAZpqtF6jQWg";
+
+// Record structure as returned by the ARNS registry
+export type ArNSRecord = {
+  domain: string;                // The ARNS domain, e.g. "ditsy.ar"
+  owner: string;
+  expires: number;
+  resolver: string;
+  address: string;
 };
 
 type HistoryContextType = {
@@ -17,7 +23,18 @@ type HistoryContextType = {
 const HistoryContext = createContext<HistoryContextType | undefined>(undefined);
 
 async function fetchHistory(domain: string): Promise<ArNSRecord[]> {
-  // Replace this with your actual fetching logic
+  const res = await fetch(ARNS_CONTRACT_URL);
+  if (!res.ok) throw new Error("Failed to fetch ARNS registry data");
+  const json = await res.json();
+  const records = json.records as Record<string, Omit<ArNSRecord, "domain">>;
+  // Find the record for the given domain
+  if (records[domain]) {
+    // Return a single-record array for consistency
+    return [
+      { domain, ...records[domain] }
+    ];
+  }
+  // Not found: return an empty array (or handle differently if you wish)
   return [];
 }
 
@@ -34,6 +51,7 @@ export const HistoryProvider: React.FC<{children: React.ReactNode}> = ({ childre
       setHistory(response);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load history');
+      setHistory([]);
     } finally {
       setLoading(false);
     }

@@ -11,6 +11,10 @@ export type ArnsEvent = {
   records?: any;
 };
 
+/**
+ * Fetches the ARNS event history for a given domain name (e.g., "rewind.ar").
+ * Uses Arweave's official GraphQL endpoint.
+ */
 export function useArnsHistory(name: string) {
   const [events, setEvents] = useState<ArnsEvent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -27,49 +31,95 @@ export function useArnsHistory(name: string) {
     setError(null);
     setEvents([]);
 
-    // --- Stubbed fetching logic ---
-    // TODO: Replace with real Arweave/ArNS fetch.
-    // Simulate fetching with timeout.
-    const timer = setTimeout(() => {
-      // Simulated results for demo
-      if (name.toLowerCase() === "rewind") {
-        setEvents([
-          {
-            type: "created",
-            timestamp: 1700000000,
-            summary: "Name registered",
-            txid: "0xabc123",
-            owner: "ownerABC",
-            records: { arweave: "rewind.ar" },
-          },
-          {
-            type: "ownership",
-            timestamp: 1710000000,
-            summary: "Ownership transferred to newOwnerXYZ",
-            txid: "0xdef456",
-            owner: "newOwnerXYZ",
-          },
-          {
-            type: "record",
-            timestamp: 1720000000,
-            summary: "Records updated",
-            txid: "0xaaa999",
-            owner: "newOwnerXYZ",
-            records: { ipfs: "bafy..." },
-          },
-        ]);
-      } else {
+    // ARNS registry contract ID as of 2024
+    const CONTRACT_ID = "C9W_ihKf4UoLFjLLP0nIUZ3fXnNq_sQFAZpqtF6jQWg";
+
+    // GraphQL to find all transactions for this ARNS name
+    const query = {
+      query: `
+        query($name: String!, $contractId: String!) {
+          transactions(
+            tags: [
+              { name: "App-Name", values: ["arweave-name-system"] },
+              { name: "Contract", values: [$contractId] },
+              { name: "ArNS-Name", values: [$name] }
+            ]
+            first: 20
+          ) {
+            edges {
+              node {
+                id
+                owner { address }
+                block { timestamp }
+                tags {
+                  name
+                  value
+                }
+              }
+            }
+          }
+        }
+      `,
+      variables: {
+        name,
+        contractId: CONTRACT_ID,
+      },
+    };
+
+    axios
+      .post("https://arweave.net/graphql", query)
+      .then((res) => {
+        const txs = res.data?.data?.transactions?.edges || [];
+        if (!txs.length) {
+          setEvents([]);
+          setLoading(false);
+          return;
+        }
+
+        // Parse transactions into ArnsEvent[]
+        const parsed: ArnsEvent[] = txs.map((t: any) => {
+          const tags = t.node.tags.reduce(
+            (acc: Record<string, string>, tag: { name: string; value: string }) => {
+              acc[tag.name] = tag.value;
+              return acc;
+            },
+            {}
+          );
+          let type: ArnsEvent["type"] = "other";
+          let summary = "";
+          if (tags["Action"] === "register") {
+            type = "created";
+            summary = "Name registered";
+          } else if (tags["Action"] === "transfer") {
+            type = "ownership";
+            summary = `Ownership transferred to ${tags["Recipient"] || "unknown"}`;
+          } else if (tags["Action"] === "update") {
+            type = "record";
+            summary = "Records updated";
+          } else {
+            summary = tags["Action"] || "Unknown event";
+          }
+          return {
+            type,
+            timestamp: t.node.block?.timestamp || 0,
+            summary,
+            txid: t.node.id,
+            owner: t.node.owner.address,
+            records: tags,
+          };
+        });
+
+        // Sort by most recent first
+        parsed.sort((a, b) => b.timestamp - a.timestamp);
+
+        setEvents(parsed);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : String(err));
         setEvents([]);
-      }
-      setLoading(false);
-    }, 1200);
-
-    // Example: For real data, use Arweave GraphQL or the ar-io API here.
-    // axios.post("https://arweave.net/graphql", {...})
-    //   .then(...)
-    //   .catch(...)
-
-    return () => clearTimeout(timer);
+        setLoading(false);
+      });
   }, [name]);
 
   return { events, loading, error };
