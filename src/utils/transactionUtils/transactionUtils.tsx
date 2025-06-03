@@ -2,10 +2,7 @@ import { SpawnANTState } from '@ar.io/sdk';
 import { StepProps } from 'antd';
 import { Address, checksumAddress } from 'viem';
 
-// import { ArweaveTransactionID } from '../../services/arweave/ArweaveTransactionID';
-// Replace with type alias for compatibility
-type ArweaveTransactionID = string;
-
+import { ArweaveTransactionID } from '../../services/arweave/ArweaveTransactionID';
 import {
   ARNSMapping,
   ARNS_INTERACTION_TYPES,
@@ -227,6 +224,7 @@ export const getWorkflowStepsForInteraction = (
 };
 
 export function getARNSMappingByInteractionType(
+  // can be used to generate ANTCard props: <ANTCard {...props = getARNSMappingByInteractionType()} />
   {
     interactionType,
     transactionData,
@@ -236,11 +234,408 @@ export function getARNSMappingByInteractionType(
   },
 ): ARNSMapping | undefined {
   switch (interactionType) {
-    // ... your full original switch cases here ...
-    // (omitted for brevity)
-    // All your cases as before, using ArweaveTransactionID as a string alias
+    case ARNS_INTERACTION_TYPES.BUY_RECORD: {
+      if (
+        !isObjectOfTransactionPayloadType<BuyRecordPayload>(
+          transactionData,
+          TRANSACTION_DATA_KEYS[INTERACTION_TYPES.BUY_RECORD].keys,
+        )
+      ) {
+        throw new Error(
+          'transaction data not of correct payload type <BuyRecordPayload>',
+        );
+      }
+
+      const years =
+        transactionData.type === TRANSACTION_TYPES.LEASE &&
+        transactionData.years
+          ? Date.now() + YEAR_IN_MILLISECONDS * transactionData.years
+          : PERMANENT_DOMAIN_MESSAGE;
+
+      const processId =
+        transactionData.processId === 'atomic'
+          ? 'atomic'
+          : new ArweaveTransactionID(transactionData.processId);
+
+      return {
+        domain: transactionData.name,
+        processId: processId,
+        deployedTransactionId: transactionData.deployedTransactionId,
+        overrides: {
+          maxUndernames: `Up to ${DEFAULT_MAX_UNDERNAMES}`,
+          leaseDuration: years,
+        },
+        primaryDefaultKeys: [
+          'domain',
+          'leaseDuration',
+          'maxUndernames',
+          'owner',
+        ],
+      };
+    }
+
+    case ARNS_INTERACTION_TYPES.INCREASE_UNDERNAMES: {
+      if (
+        !isObjectOfTransactionPayloadType<IncreaseUndernamesPayload>(
+          transactionData,
+          TRANSACTION_DATA_KEYS[INTERACTION_TYPES.INCREASE_UNDERNAMES].keys,
+        )
+      ) {
+        throw new Error(
+          'transaction data not of correct payload type <IncreaseUndernamesPayload>',
+        );
+      }
+
+      return {
+        domain: transactionData.name,
+        processId: new ArweaveTransactionID(transactionData.processId),
+        deployedTransactionId: transactionData.deployedTransactionId,
+        overrides: {
+          maxUndernames: transactionData.deployedTransactionId ? (
+            <span className="white">
+              Up to{' '}
+              <span style={{ color: 'var(--success-green)' }}>
+                {transactionData.qty + transactionData.oldQty!}
+              </span>
+            </span>
+          ) : (
+            <span className="add-box center">
+              {transactionData.qty + transactionData.oldQty!}
+            </span>
+          ),
+        },
+        primaryDefaultKeys: [
+          'domain',
+          'leaseDuration',
+          'maxUndernames',
+          'owner',
+        ],
+      };
+    }
+    case ARNS_INTERACTION_TYPES.UPGRADE_NAME: {
+      if (
+        !isObjectOfTransactionPayloadType<ExtendLeasePayload>(
+          transactionData,
+          TRANSACTION_DATA_KEYS[ARNS_INTERACTION_TYPES.UPGRADE_NAME].keys,
+        )
+      ) {
+        throw new Error(
+          'transaction data not of correct payload type <ExtendLeasePayload>',
+        );
+      }
+
+      return {
+        domain: transactionData.name,
+        processId: transactionData.processId,
+        deployedTransactionId: transactionData.deployedTransactionId,
+        record: transactionData.arnsRecord,
+        overrides: {
+          leaseDuration: 'Indefinite',
+        },
+        primaryDefaultKeys: [
+          'domain',
+          'leaseDuration',
+          'maxUndernames',
+          'owner',
+        ],
+      };
+    }
+    case ARNS_INTERACTION_TYPES.EXTEND_LEASE: {
+      if (
+        !isObjectOfTransactionPayloadType<ExtendLeasePayload>(
+          transactionData,
+          TRANSACTION_DATA_KEYS[INTERACTION_TYPES.EXTEND_LEASE].keys,
+        )
+      ) {
+        throw new Error(
+          'transaction data not of correct payload type <ExtendLeasePayload>',
+        );
+      }
+
+      return {
+        domain: transactionData.name,
+        processId: transactionData.processId,
+        deployedTransactionId: transactionData.deployedTransactionId,
+        record: transactionData.arnsRecord,
+        overrides: {
+          leaseDuration: transactionData.deployedTransactionId ? (
+            <span className="white">
+              <span style={{ color: 'var(--success-green)' }}>
+                {transactionData.years} year
+                {transactionData.years > 1 ? 's' : ''}
+              </span>
+            </span>
+          ) : (
+            <span className="add-box center">
+              {transactionData.years} year{transactionData.years > 1 ? 's' : ''}
+            </span>
+          ),
+        },
+        primaryDefaultKeys: [
+          'domain',
+          'leaseDuration',
+          'maxUndernames',
+          'owner',
+        ],
+      };
+    }
+
+    case INTERACTION_TYPES.SET_NAME: {
+      if (
+        !isObjectOfTransactionPayloadType<SetNamePayload>(
+          transactionData,
+          TRANSACTION_DATA_KEYS[INTERACTION_TYPES.SET_NAME].keys,
+        )
+      ) {
+        throw new Error(
+          'transaction data not of correct payload type <SetNamePayload>',
+        );
+      }
+      return {
+        domain: '',
+        processId: new ArweaveTransactionID(transactionData.assetId),
+        deployedTransactionId: transactionData.deployedTransactionId,
+        overrides: {
+          name: transactionData.name,
+        },
+        disabledKeys: [
+          'evolve',
+          'maxSubdomains',
+          'maxUndernames',
+          'domain',
+          'leaseDuration',
+          'ttlSeconds',
+        ],
+      };
+    }
+    case INTERACTION_TYPES.SET_TICKER: {
+      if (
+        !isObjectOfTransactionPayloadType<SetTickerPayload>(
+          transactionData,
+          TRANSACTION_DATA_KEYS[INTERACTION_TYPES.SET_TICKER].keys,
+        )
+      ) {
+        throw new Error(
+          `transaction data not of correct payload type <SetTickerPayload> keys: ${Object.keys(
+            transactionData,
+          )}`,
+        );
+      }
+      return {
+        domain: '',
+        processId: new ArweaveTransactionID(transactionData.assetId),
+        deployedTransactionId: transactionData.deployedTransactionId,
+        overrides: {
+          ticker: transactionData.ticker,
+        },
+        disabledKeys: [
+          'evolve',
+          'maxSubdomains',
+          'maxUndernames',
+          'domain',
+          'leaseDuration',
+          'ttlSeconds',
+        ],
+      };
+    }
+    case INTERACTION_TYPES.REMOVE_RECORD: {
+      if (
+        !isObjectOfTransactionPayloadType<RemoveRecordPayload>(
+          transactionData,
+          TRANSACTION_DATA_KEYS[INTERACTION_TYPES.REMOVE_RECORD].keys,
+        )
+      ) {
+        throw new Error(
+          `transaction data not of correct payload type <SetRecordPayload> keys: ${Object.keys(
+            transactionData,
+          )}`,
+        );
+      }
+      return {
+        domain: '',
+        processId: new ArweaveTransactionID(transactionData.assetId),
+        deployedTransactionId: transactionData.deployedTransactionId,
+        overrides: {
+          undername: transactionData.subDomain,
+        },
+        disabledKeys: [
+          'evolve',
+          'maxSubdomains',
+          'maxUndernames',
+          'domain',
+          'leaseDuration',
+        ],
+      };
+    }
+    case INTERACTION_TYPES.SET_RECORD: {
+      if (
+        !isObjectOfTransactionPayloadType<SetRecordPayload>(
+          transactionData,
+          TRANSACTION_DATA_KEYS[INTERACTION_TYPES.SET_TARGET_ID].keys,
+        )
+      ) {
+        throw new Error(
+          `transaction data not of correct payload type <SetRecordPayload> keys: ${Object.keys(
+            transactionData,
+          )}`,
+        );
+      }
+      return {
+        domain: '',
+        processId: new ArweaveTransactionID(transactionData.assetId),
+        deployedTransactionId: transactionData.deployedTransactionId,
+        overrides: {
+          undername: transactionData.subDomain,
+          targetId: transactionData.transactionId,
+          ttlSeconds: transactionData.ttlSeconds,
+        },
+        disabledKeys: [
+          'evolve',
+          'maxSubdomains',
+          'maxUndernames',
+          'domain',
+          'leaseDuration',
+        ],
+      };
+    }
+    case INTERACTION_TYPES.SET_TARGET_ID: {
+      if (
+        !isObjectOfTransactionPayloadType<SetRecordPayload>(
+          transactionData,
+          TRANSACTION_DATA_KEYS[INTERACTION_TYPES.SET_TARGET_ID].keys,
+        )
+      ) {
+        throw new Error(
+          `transaction data not of correct payload type <SetRecordPayload> keys: ${Object.keys(
+            transactionData,
+          )}`,
+        );
+      }
+      return {
+        domain: '',
+        processId: new ArweaveTransactionID(transactionData.assetId),
+        deployedTransactionId: transactionData.deployedTransactionId,
+        overrides: {
+          targetId: transactionData.transactionId,
+        },
+        disabledKeys: [
+          'evolve',
+          'maxSubdomains',
+          'maxUndernames',
+          'domain',
+          'leaseDuration',
+          'ttlSeconds',
+        ],
+      };
+    }
+    case INTERACTION_TYPES.SET_TTL_SECONDS: {
+      if (
+        !isObjectOfTransactionPayloadType<SetRecordPayload>(
+          transactionData,
+          TRANSACTION_DATA_KEYS[INTERACTION_TYPES.SET_TTL_SECONDS].keys,
+        )
+      ) {
+        throw new Error(
+          `transaction data not of correct payload type <SetRecordPayload> keys: ${Object.keys(
+            transactionData,
+          )}`,
+        );
+      }
+      return {
+        domain: '',
+        processId: new ArweaveTransactionID(transactionData.assetId),
+        deployedTransactionId: transactionData.deployedTransactionId,
+        overrides: {
+          ttlSeconds: transactionData.ttlSeconds,
+        },
+        disabledKeys: [
+          'evolve',
+          'maxSubdomains',
+          'maxUndernames',
+          'domain',
+          'leaseDuration',
+        ],
+      };
+    }
+
+    case INTERACTION_TYPES.SET_CONTROLLER: {
+      if (
+        !isObjectOfTransactionPayloadType<SetControllerPayload>(
+          transactionData,
+          TRANSACTION_DATA_KEYS[INTERACTION_TYPES.SET_CONTROLLER].keys,
+        )
+      ) {
+        throw new Error(
+          `transaction data not of correct payload type <SetControllerPayload> keys: ${Object.keys(
+            transactionData,
+          )}`,
+        );
+      }
+      return {
+        domain: '',
+        processId: new ArweaveTransactionID(transactionData.assetId),
+        deployedTransactionId: transactionData.deployedTransactionId,
+        overrides: {
+          controllers: <span>{transactionData.target}</span>,
+        },
+        disabledKeys: [
+          'evolve',
+          'maxSubdomains',
+          'maxUndernames',
+          'domain',
+          'leaseDuration',
+        ],
+      };
+    }
+    case INTERACTION_TYPES.TRANSFER: {
+      if (
+        !isObjectOfTransactionPayloadType<TransferIOPayload>(
+          transactionData,
+          TRANSACTION_DATA_KEYS[INTERACTION_TYPES.TRANSFER].keys,
+        )
+      ) {
+        throw new Error(
+          `transaction data not of correct payload type <TransferANTPayload> keys: ${Object.keys(
+            transactionData,
+          )}`,
+        );
+      }
+      return {
+        domain: '',
+        processId: new ArweaveTransactionID(transactionData.assetId),
+        deployedTransactionId: transactionData.deployedTransactionId,
+        overrides: {
+          'New Owner': transactionData.target,
+        },
+        compact: false,
+        disabledKeys: ['maxUndernames', 'owner', 'controller', 'ttlSeconds'],
+      };
+    }
+    case INTERACTION_TYPES.TRANSFER_ANT: {
+      if (
+        !isObjectOfTransactionPayloadType<TransferANTPayload>(
+          transactionData,
+          TRANSACTION_DATA_KEYS[INTERACTION_TYPES.TRANSFER_ANT].keys,
+        )
+      ) {
+        throw new Error(
+          `transaction data not of correct payload type <TransferANTPayload> keys: ${Object.keys(
+            transactionData,
+          )}`,
+        );
+      }
+      return {
+        domain: '',
+        processId: new ArweaveTransactionID(transactionData.assetId),
+        deployedTransactionId: transactionData.deployedTransactionId,
+        overrides: {
+          'New Owner': transactionData.target,
+        },
+        compact: false,
+        disabledKeys: ['maxUndernames', 'owner', 'controller', 'ttlSeconds'],
+      };
+    }
   }
-  return undefined; // Ensure a return value for all paths to fix TS2355
 }
 
 export function getLinkId(

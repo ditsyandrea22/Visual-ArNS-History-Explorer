@@ -13,8 +13,7 @@ import {
   createAoSigner,
   spawnANT,
 } from '@ar.io/sdk/web';
-// Comment out or remove the following import, since the file does not exist:
-// import { TurboArNSClient } from '@src/services/turbo/TurboArNSClient';
+import { TurboArNSClient } from '@src/services/turbo/TurboArNSClient';
 import { TransactionAction } from '@src/state/reducers/TransactionReducer';
 import {
   ARNS_INTERACTION_TYPES,
@@ -26,9 +25,6 @@ import { WRITE_OPTIONS } from '@src/utils/constants';
 import eventEmitter from '@src/utils/events';
 import { queryClient } from '@src/utils/network';
 import { Dispatch } from 'react';
-
-// Type for TurboArNSClient as a temporary workaround (replace with real import when file exists)
-type TurboArNSClient = any;
 
 export default async function dispatchArIOInteraction({
   payload,

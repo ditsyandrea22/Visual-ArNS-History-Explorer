@@ -1,11 +1,7 @@
-// Remove the missing import and use a type alias for compatibility
-// import { ArweaveTransactionID } from '@src/services/arweave/ArweaveTransactionID';
+import { ArweaveTransactionID } from '@src/services/arweave/ArweaveTransactionID';
 import { useEffect, useState } from 'react';
 
 import { useGlobalState } from '../../state/contexts/GlobalState';
-
-// Use a type alias for ArweaveTransactionID
-type ArweaveTransactionID = string;
 
 const defaultReserved = {
   isReserved: false,
@@ -30,7 +26,6 @@ export function useRegistrationStatus(domain: string) {
       reset();
     }
     updateRegistrationStatus(domain);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [domain]);
 
   function reset() {
@@ -64,7 +59,7 @@ export function useRegistrationStatus(domain: string) {
       setIsReserved({
         ...isReserved,
         reservedFor: isReserved.reservedFor
-          ? isReserved.reservedFor as ArweaveTransactionID // just use the string directly
+          ? new ArweaveTransactionID(isReserved.reservedFor)
           : undefined,
       });
       setValidated(true);

@@ -1,0 +1,84 @@
+name: Production Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        step: ['lint:check', 'build']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+      - run: yarn --frozen-lockfile
+      - run: yarn ${{ matrix.step }}
+
+  deploy-to-firebase:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: production
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+
+      - name: Install and Build 🔧
+        run: |
+          yarn --frozen-lockfile
+          yarn build
+        env:
+          # FOR BUILD
+          VITE_NODE_ENV: production
+          VITE_SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          VITE_SENTRY_RELEASE: ${{ github.sha }}
+          VITE_SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          VITE_SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          VITE_SENTRY_DSN_PUBLIC_KEY: ${{ secrets.SENTRY_DSN_PUBLIC_KEY }}
+          VITE_SENTRY_DSN_PROJECT_URI: ${{ secrets.SENTRY_DSN_PROJECT_URI }}
+          VITE_SENTRY_DSN_PROJECT_ID: ${{ secrets.SENTRY_DSN_PROJECT_ID }}
+          VITE_GITHUB_HASH: ${{ github.sha }}
+          VITE_ARWEAVE_HOST: ${{ vars.ARWEAVE_HOST }}
+          VITE_ARNS_SERVICE_API: ${{ vars.ARNS_SERVICE_API }}
+          VITE_ARNS_REGISTRY_ADDRESS: ${{ vars.VITE_ARNS_REGISTRY_ADDRESS }}
+          VITE_ARIO_PROCESS_ID: ${{ vars.VITE_ARIO_PROCESS_ID }}
+          VITE_ARIO_AO_CU_URL: ${{ vars.VITE_ARIO_AO_CU_URL }}
+          VITE_ANT_AO_CU_URL: ${{ vars.VITE_ANT_AO_CU_URL }}
+
+      # Disribute to Firebase
+      - name: Deploy 🚀
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
+          channelId: live
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+      - run: yarn --frozen-lockfile
+      - run: yarn publish:arweave
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          VITE_ARNS_NAME: ${{ secrets.ARNS_NAME }}
+          VITE_GITHUB_HASH: ${{ github.sha }}
+          VITE_ARIO_PROCESS_ID: ${{ vars.VITE_ARIO_PROCESS_ID }}
+          VITE_ARNS_REGISTRY_ADDRESS: ${{ vars.VITE_ARNS_REGISTRY_ADDRESS }}
+          VITE_ARWEAVE_HOST: ${{ vars.ARWEAVE_HOST }}
+          VITE_NODE_ENV: production
+          VITE_ARIO_AO_CU_URL: ${{ vars.VITE_ARIO_AO_CU_URL }}
+          VITE_ANT_AO_CU_URL: ${{ vars.VITE_ANT_AO_CU_URL }}

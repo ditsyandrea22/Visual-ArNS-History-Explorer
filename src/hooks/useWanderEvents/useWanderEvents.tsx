@@ -1,13 +1,8 @@
-// Remove this broken import:
-// import { WanderWalletConnector } from '@src/services/wallets';
-
-// Add a stub:
-class WanderWalletConnector {}
-
+import { ArweaveTransactionID } from '@src/services/arweave/ArweaveTransactionID';
+import { WanderWalletConnector } from '@src/services/wallets';
 import { useEffect } from 'react';
-import { useWalletState } from '../../state/contexts/WalletState';
 
-type ArweaveTransactionID = string;
+import { useWalletState } from '../../state/contexts/WalletState';
 
 function useWanderEvents() {
   const [{ wallet }, dispatchWalletState] = useWalletState();
@@ -17,13 +12,13 @@ function useWanderEvents() {
       if (wallet instanceof WanderWalletConnector) {
         dispatchWalletState({
           type: 'setWalletAddress',
-          payload: e.detail.address as ArweaveTransactionID,
+          payload: new ArweaveTransactionID(e.detail.address),
         });
       }
     };
-    window.addEventListener('walletSwitch', addressListener as EventListener);
+    window.addEventListener('walletSwitch', addressListener);
     return () => {
-      window.removeEventListener('walletSwitch', addressListener as EventListener);
+      window.removeEventListener('walletSwitch', addressListener);
     };
   }, [dispatchWalletState, wallet]);
 }

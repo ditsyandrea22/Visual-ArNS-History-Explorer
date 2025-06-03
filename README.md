@@ -1,93 +1,60 @@
-# Visual-ArNS-History-Explorer
+# arns-react
 
-[Live Demo](https://visual-ar-ns-history-explorer.vercel.app)
-
-## Overview
-
-**Visual-ArNS-History-Explorer** is a TypeScript/React application designed to visually explore ArNS (Arweave Name System) history and data. This project leverages the Arweave ecosystem to provide an interactive and user-friendly interface for querying, visualizing, and understanding ArNS records, transactions, and their historical evolution.
-
-## Features
-
-- Visualize ArNS history and record changes over time.
-- Explore detailed data from the Arweave blockchain.
-- Modern TypeScript codebase with React and Vite.
-- Rich UI using Ant Design components and Radix UI.
-- Wallet connectivity (ArConnect, Arweave wallet, and more).
-- Robust data fetching and caching with React Query.
-- Arweave and ArNS SDK integrations.
-- Stripe integration for payments (if enabled).
-- Storybook for UI component development and testing.
+A React App for the Arweave Name System Registry, which lets users search for
+and purchase Names.
 
 ## Getting Started
 
-### Prerequisites
+### Run
 
-- Node.js (v18 or above recommended)
-- npm (v7 or above recommended)
-
-### Installation
-
-```bash
-git clone https://github.com/ditsyandrea22/Visual-ArNS-History-Explorer.git
-cd Visual-ArNS-History-Explorer
-npm install
+```shell
+yarn
+yarn dev
 ```
 
-### Local Development
+### Build
 
-```bash
-npm run dev
+```shell
+yarn build
 ```
 
-Visit [http://localhost:5173](http://localhost:5173) to view the app.
+### Test
 
-### Build for Production
-
-```bash
-npm run build
+```shell
+yarn test
 ```
 
-### Storybook
+## Contributions
 
-To run the Storybook UI component explorer:
+### Components
 
-```bash
-npm run storybook
-```
+These rules are to help keep the repo tidy and help know where everything is. A
+moment in the mind is worth nine in the fire.
 
-## Development Preview
+- When creating a component, create a folder for it, which includes its .tsx
+  file named for its exported component, a testing folder named '**tests**', and
+  its CSS file named as styles.css.
+- When creating a test, each testing file should be name as:
+  `<component-name>.test.ts` .
+- When creating a util, it should be in the src/utils folder, which has its own
+  testing folder.
+- When adding images, they should go in the assets/images/<theme-type> folder.
+  Dark-mode and light-mode specific images get their own folders, images shared
+  across themes go in the common folder.
+- When adding a translation, it goes in the assets/translations folder, named as
+  `<native-languages-name>.json`. Translated text in the json should
 
-You can try a live development preview here:  
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://5173-ditsyandrea-visualarnsh-a91n50tw1dk.ws-us120.gitpod.io/)
+### Notifications
 
-## Tech Stack
+When using the notification API you can import the `eventEmitter` from the
+`events.ts` file. From the `errors.ts` file you can import
+`NotificationOnlyError` which will not emit the error to sentry, otherwise for
+errors that should be reported, such as unhandled errors, use the `Error` object
+or create a custom error that extends it in the `errors.ts` file.
 
-- **Frontend:** React, TypeScript, Vite
-- **UI:** Ant Design, Radix UI, Tailwind CSS, Framer Motion
-- **State/Data:** React Query
-- **Blockchain:** Arweave SDK, ArNS, ArConnect, ArDrive
-- **Payments:** Stripe (optional)
-- **Testing:** Jest, Playwright, Testing Library
-- **Documentation:** Storybook, Typedoc
+### Smartweave Contract Deploys
 
-## Deployment
-
-The app can be deployed to Vercel or any static hosting provider.
-
-## Contribution
-
-Contributions are welcome! Please fork the repository and submit a pull request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -am 'Add new feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Create a new Pull Request
-
-## License
-
-This project is currently **not licensed**. If you plan to use or contribute, please open an issue to discuss licensing.
-
----
-
-© 2025 [ditsyandrea22](https://github.com/ditsyandrea22) – [Project Homepage](https://visual-ar-ns-history-explorer.vercel.app)
+We currently deploy contracts manually due to Warp Deploy Plugin not
+implementing tree shaking. This saves 2mb on the build size - once warp adds
+deploy functionality in the core package, we should switch to that, or when our
+deployment method becomes more complicated (e.g L2 usage)

@@ -4,9 +4,7 @@ import { Checkbox, Table } from 'antd';
 import { useEffect, useState } from 'react';
 
 import { useIsMobile } from '../../../../hooks';
-// import { ArweaveTransactionID } from '../../../../services/arweave/ArweaveTransactionID';
-// Use a type alias for compatibility:
-type ArweaveTransactionID = string;
+import { ArweaveTransactionID } from '../../../../services/arweave/ArweaveTransactionID';
 import {
   formatForMaxCharCount,
   getCustomPaginationButtons,
@@ -14,9 +12,6 @@ import {
 } from '../../../../utils';
 import DialogModal from '../../DialogModal/DialogModal';
 import './styles.css';
-
-// Add a dummy class for compatibility with `new ArweaveTransactionID(...)`
-const ArweaveTransactionID = function (id: string) { return id; } as any;
 
 function RemoveControllersModal({
   antId,

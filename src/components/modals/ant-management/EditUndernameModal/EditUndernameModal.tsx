@@ -3,9 +3,7 @@ import { clamp } from 'lodash';
 import { useEffect, useRef, useState } from 'react';
 
 import { useIsMobile } from '../../../../hooks';
-// import { ArweaveTransactionID } from '../../../../services/arweave/ArweaveTransactionID';
-// Use a type alias for compatibility:
-type ArweaveTransactionID = string;
+import { ArweaveTransactionID } from '../../../../services/arweave/ArweaveTransactionID';
 import { useGlobalState } from '../../../../state/contexts/GlobalState';
 import { SetRecordPayload, VALIDATION_INPUT_TYPES } from '../../../../types';
 import {

@@ -16,41 +16,15 @@ function Tooltip({
   icon?: ReactNode;
   tooltipOverrides?: Partial<TooltipProps>;
 }) {
-  // Extract deprecated overlayInnerStyle, overlayStyle, and destroyTooltipOnHide, and merge into styles
-  const {
-    overlayInnerStyle,
-    overlayStyle,
-    destroyTooltipOnHide,
-    styles: overrideStyles,
-    ...restOverrides
-  } = tooltipOverrides || {};
-
-  // Compose the new styles prop for antd Tooltip
-  const mergedStyles = {
-    ...overrideStyles,
-    root: {
-      ...(overrideStyles && overrideStyles.root ? overrideStyles.root : {}),
-      ...(overlayStyle ? overlayStyle : {}),
-    },
-    body: {
-      ...(overrideStyles && overrideStyles.body ? overrideStyles.body : {}),
-      ...(overlayInnerStyle ? overlayInnerStyle : {}),
-    },
-  };
-
-  // Only pass boolean to destroyOnHidden
-  const destroyOnHiddenFlag =
-    typeof destroyTooltipOnHide === 'boolean' ? destroyTooltipOnHide : true;
-
   return (
     <>
       <AntdTooltip
         title={message}
         color="var(--box-color)"
         className="pointer"
-        styles={mergedStyles}
-        {...restOverrides}
-        destroyOnHidden={destroyOnHiddenFlag}
+        overlayInnerStyle={{ padding: '15px' }}
+        {...tooltipOverrides}
+        destroyTooltipOnHide={true}
       >
         {icon}
       </AntdTooltip>

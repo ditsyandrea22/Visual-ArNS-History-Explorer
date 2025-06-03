@@ -7,11 +7,7 @@ import ArweaveID, {
 } from '@src/components/layout/ArweaveID/ArweaveID';
 import { useLatestANTVersion } from '@src/hooks/useANTVersions';
 import { buildDomainInfoQuery } from '@src/hooks/useDomainInfo';
-// import { ArweaveTransactionID } from '@src/services/arweave/ArweaveTransactionID';
-// Use a type alias and dummy class for compatibility:
-type ArweaveTransactionID = string;
-const ArweaveTransactionID = function (id: string) { return id; } as any;
-
+import { ArweaveTransactionID } from '@src/services/arweave/ArweaveTransactionID';
 import {
   useArNSState,
   useGlobalState,

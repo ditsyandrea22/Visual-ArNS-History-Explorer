@@ -6,6 +6,7 @@ import { useTransactionState } from '@src/state/contexts/TransactionState';
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { ArweaveTransactionID } from '../../../services/arweave/ArweaveTransactionID';
 import TransactionSuccessCard from '../../cards/TransactionSuccessCard/TransactionSuccessCard';
 import { CodeSandboxIcon } from '../../icons';
 import './styles.css';
@@ -23,7 +24,7 @@ function ManageANT() {
     useTransactionState();
 
   useEffect(() => {
-    // removes banner from page by calling reset
+    // removes banner from page by calling rest
     return () => {
       dispatchTransactionState({ type: 'reset' });
     };
@@ -50,7 +51,7 @@ function ManageANT() {
       >
         {interactionResult ? (
           <TransactionSuccessCard
-            txId={interactionResult.id}
+            txId={new ArweaveTransactionID(interactionResult.id)}
             title={`${workflowName} completed`}
             close={() => {
               dispatchTransactionState({
@@ -58,7 +59,9 @@ function ManageANT() {
               });
             }}
           />
-        ) : null}
+        ) : (
+          <></>
+        )}
         <div className="flex-row flex-space-between">
           <h2 className="flex white center" style={{ gap: '15px' }}>
             <CodeSandboxIcon

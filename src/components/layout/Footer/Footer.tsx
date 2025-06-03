@@ -6,17 +6,16 @@ import { FaGithub } from 'react-icons/fa';
 import { FaDiscord } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
-// --- FIX: Remove import of missing CHANGELOG.md ---
-// import changeLog from '../../../../CHANGELOG.md?raw'; // <-- REMOVE THIS LINE
-
+import changeLog from '../../../../CHANGELOG.md?raw';
 import { ARIO_DISCORD_LINK } from '../../../utils/constants';
 import { APP_VERSION } from '../../../utils/constants';
 import { BrandLogo } from '../../icons';
 import './styles.css';
 
-// --- FIX: Provide fallback changelog text or leave empty ---
-const FORMATTED_CHANGELOG = `Changelog not available.`;
-// If you want, you can provide your actual changelog as a string above, or load from another source.
+const FORMATTED_CHANGELOG = changeLog
+  .substring(changeLog.indexOf('## [Unreleased]') + 16)
+  .trim()
+  .replace(/\[([\w.]+)\]/g, (match, text) => `v${text}`);
 
 function Footer() {
   const [showChangeLogModal, setShowChangeLogModal] = useState(false);

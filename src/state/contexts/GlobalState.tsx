@@ -15,9 +15,8 @@ import React, {
   useReducer,
 } from 'react';
 
-// Removed imports for missing files:
-// import { ArweaveCompositeDataProvider } from '../../services/arweave/ArweaveCompositeDataProvider';
-// import { SimpleArweaveDataProvider } from '../../services/arweave/SimpleArweaveDataProvider';
+import { ArweaveCompositeDataProvider } from '../../services/arweave/ArweaveCompositeDataProvider';
+import { SimpleArweaveDataProvider } from '../../services/arweave/SimpleArweaveDataProvider';
 import {
   ARIO_AO_CU_URL,
   ARIO_PROCESS_ID,
@@ -27,12 +26,7 @@ import {
 } from '../../utils/constants';
 import type { GlobalAction } from '../reducers/GlobalReducer';
 
-// TEMP STUBS for missing providers
-type ArweaveCompositeDataProvider = any;
-const SimpleArweaveDataProvider = (arweave: any) => arweave;
-
-// Use DEFAULT_ARWEAVE directly as a stub
-export const defaultArweave = SimpleArweaveDataProvider(DEFAULT_ARWEAVE);
+export const defaultArweave = new SimpleArweaveDataProvider(DEFAULT_ARWEAVE);
 export const defaultArIO = ARIO.init({
   paymentUrl: NETWORK_DEFAULTS.TURBO.PAYMENT_URL,
   process: new AOProcess({
@@ -67,7 +61,10 @@ const initialState: GlobalState = {
   antAoClient: connect(NETWORK_DEFAULTS.AO.ANT),
   blockHeight: undefined,
   lastBlockUpdateTimestamp: undefined,
-  arweaveDataProvider: {}, // Use an empty object as a stub provider
+  arweaveDataProvider: new ArweaveCompositeDataProvider({
+    arweave: defaultArweave,
+    contract: defaultArIO,
+  }),
   arioContract: defaultArIO,
 };
 

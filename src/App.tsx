@@ -9,7 +9,6 @@ import {
   RouterProvider,
   createHashRouter,
   createRoutesFromElements,
-  useNavigate,
 } from 'react-router-dom';
 
 import { Layout } from './components/layout';
@@ -70,19 +69,6 @@ const RNPPage = React.lazy(() => import('./components/pages/RNPPage/RNPPage'));
 const sentryCreateBrowserRouter =
   Sentry.wrapCreateBrowserRouter(createHashRouter);
 
-// Wrapper for ConnectWalletModal to provide required props
-function ConnectWalletModalRoute() {
-  const navigate = useNavigate();
-  return (
-    <Suspense fallback={<PageLoader loading={true} message={'Loading, please wait'} />}>
-      <ConnectWalletModal
-        onConnect={() => navigate(-1)}
-        onClose={() => navigate(-1)}
-      />
-    </Suspense>
-  );
-}
-
 function App() {
   useWanderEvents();
   const [{ turboNetwork }] = useGlobalState();
@@ -109,7 +95,15 @@ function App() {
           />
           <Route
             path="connect"
-            element={<ConnectWalletModalRoute />}
+            element={
+              <Suspense
+                fallback={
+                  <PageLoader loading={true} message={'Loading, please wait'} />
+                }
+              >
+                <ConnectWalletModal />
+              </Suspense>
+            }
           />
           <Route path="manage">
             <Route index={true} element={<Navigate to="names" />} />
