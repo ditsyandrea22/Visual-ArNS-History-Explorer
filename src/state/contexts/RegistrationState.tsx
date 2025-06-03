@@ -7,20 +7,22 @@ import {
   useReducer,
 } from 'react';
 
-import { ArweaveTransactionID } from '../../services/arweave/ArweaveTransactionID';
+// Removed import for missing file:
+// import { ArweaveTransactionID } from '../../services/arweave/ArweaveTransactionID';
 import { TRANSACTION_TYPES } from '../../types';
 import { RegistrationAction } from '../reducers/RegistrationReducer';
 import { useGlobalState } from './GlobalState';
 
+// Use string instead of ArweaveTransactionID for transaction IDs
 export type RegistrationState = {
-  resolvedTxID?: ArweaveTransactionID;
+  resolvedTxID?: string;
   domain: string;
   leaseDuration: number;
   antContract?: AoANTRead;
-  targetID?: ArweaveTransactionID;
-  antID?: ArweaveTransactionID;
+  targetID?: string;
+  antID?: string;
   fee: { ar: number; [x: string]: number | undefined };
-  targetId?: ArweaveTransactionID;
+  targetId?: string;
   isRegistered: boolean;
   stage: number;
   isSearching: boolean;

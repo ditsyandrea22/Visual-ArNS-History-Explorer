@@ -9,7 +9,8 @@ import {
 } from 'react';
 
 import { useArNSState, useGlobalState } from '.';
-import { ArweaveTransactionID } from '../../services/arweave/ArweaveTransactionID';
+// Removed import for missing file:
+// import { ArweaveTransactionID } from '../../services/arweave/ArweaveTransactionID';
 import {
   ANT_INTERACTION_TYPES,
   ExcludedValidInteractionType,
@@ -19,8 +20,9 @@ import { dispatchANTUpdate } from '../actions/dispatchANTUpdate';
 import { TransactionAction } from '../reducers/TransactionReducer';
 import { useWalletState } from './WalletState';
 
+// Use string instead of ArweaveTransactionID for transaction IDs
 export type TransactionState = {
-  deployedTransactionId?: ArweaveTransactionID;
+  deployedTransactionId?: string;
   transactionData?: TransactionData; // data that will be used to perform the transaction.
   interactionType?: ExcludedValidInteractionType;
   workflowName?: string;
