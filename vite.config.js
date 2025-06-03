@@ -52,4 +52,9 @@ export default defineConfig({
       '@src': path.resolve(__dirname, 'src'),
     },
   },
+  server: {
+    allowedHosts: [
+      "5173-ditsyandrea-visualarnsh-a91n50tw1dk.ws-us120.gitpod.io"
+    ]
+  }
 });

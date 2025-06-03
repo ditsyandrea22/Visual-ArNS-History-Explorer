@@ -9,6 +9,7 @@ import {
   RouterProvider,
   createHashRouter,
   createRoutesFromElements,
+  useNavigate,
 } from 'react-router-dom';
 
 import { Layout } from './components/layout';
@@ -69,6 +70,23 @@ const RNPPage = React.lazy(() => import('./components/pages/RNPPage/RNPPage'));
 const sentryCreateBrowserRouter =
   Sentry.wrapCreateBrowserRouter(createHashRouter);
 
+// Wrapper component to provide useNavigate for ConnectWalletModal route
+function ConnectWalletModalRoute() {
+  const navigate = useNavigate();
+  return (
+    <Suspense fallback={<PageLoader loading={true} message={'Loading, please wait'} />}>
+      <ConnectWalletModal
+        onConnect={(connector: any) => {
+          // handle successful connection
+          // ... your logic here ...
+          navigate(-1); // go back to previous page
+        }}
+        onClose={() => navigate(-1)}
+      />
+    </Suspense>
+  );
+}
+
 function App() {
   useWanderEvents();
   const [{ turboNetwork }] = useGlobalState();
@@ -95,15 +113,7 @@ function App() {
           />
           <Route
             path="connect"
-            element={
-              <Suspense
-                fallback={
-                  <PageLoader loading={true} message={'Loading, please wait'} />
-                }
-              >
-                <ConnectWalletModal />
-              </Suspense>
-            }
+            element={<ConnectWalletModalRoute />}
           />
           <Route path="manage">
             <Route index={true} element={<Navigate to="names" />} />
@@ -358,7 +368,7 @@ function App() {
                 <RNPPage />
               </Suspense>
             }
-          />{' '}
+          />
           <Route
             path="/prices"
             element={
@@ -394,14 +404,12 @@ function App() {
   );
 
   return (
-    <>
-      <Elements
-        key={turboNetwork.STRIPE_PUBLISHABLE_KEY}
-        stripe={stripePromise}
-      >
-        <RouterProvider router={router} />
-      </Elements>
-    </>
+    <Elements
+      key={turboNetwork.STRIPE_PUBLISHABLE_KEY}
+      stripe={stripePromise}
+    >
+      <RouterProvider router={router} />
+    </Elements>
   );
 }
 
