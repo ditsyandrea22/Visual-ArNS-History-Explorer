@@ -7,7 +7,8 @@ import { TokenType } from '@ardrive/turbo-sdk';
 import Arweave from 'arweave';
 import { ArweaveWebWallet } from 'arweave-wallet-connector';
 
-import antChangelog from '../../assets/ant-changelog.md?raw';
+// Removed import { ArweaveTransactionID } from '../services/arweave/ArweaveTransactionID';
+
 import AO_IMAGE from '../../assets/images/featured-domains/ao.png';
 import ARDRIVE_IMAGE from '../../assets/images/featured-domains/ardrive.png';
 import ARLINK_IMAGE from '../../assets/images/featured-domains/arlink.png';
@@ -17,7 +18,6 @@ import METALINKS_IMAGE from '../../assets/images/featured-domains/metalinks.png'
 import MFERS_IMAGE from '../../assets/images/featured-domains/mfers.png';
 import PERMASWAP_IMAGE from '../../assets/images/featured-domains/permaswap.png';
 import SAM_IMAGE from '../../assets/images/featured-domains/sam.png';
-import { ArweaveTransactionID } from '../services/arweave/ArweaveTransactionID';
 
 export const APP_NAME = 'AR-IO-ArNS-App';
 export const APP_VERSION = __NPM_PACKAGE_VERSION__ || '1.0.0';
@@ -166,7 +166,6 @@ export const AVERAGE_BLOCK_TIME_MS = 120_000; // 2 mins
 
 export const FEATURED_DOMAINS: { [x: string]: { imageUrl: string } } = {
   arlink: { imageUrl: ARLINK_IMAGE },
-
   metalinks: { imageUrl: METALINKS_IMAGE },
   ardrive: { imageUrl: ARDRIVE_IMAGE },
   arwiki: { imageUrl: ARWIKI_IMAGE },
@@ -175,7 +174,6 @@ export const FEATURED_DOMAINS: { [x: string]: { imageUrl: string } } = {
   // alex: { imageUrl: ALEX_IMAGE },
   // cookbook: { imageUrl: COOKBOOK_IMAGE },
   ao: { imageUrl: AO_IMAGE },
-
   sam: { imageUrl: SAM_IMAGE },
   mfers: { imageUrl: MFERS_IMAGE },
 };
@@ -190,12 +188,13 @@ export const MILLISECONDS_IN_GRACE_PERIOD = SECONDS_IN_GRACE_PERIOD * 1000;
 
 export const START_RNP_PREMIUM = 50;
 
-export const transactionByOwnerQuery = (address: ArweaveTransactionID) => {
+// Accept a string transaction id for these exports (no more ArweaveTransactionID)
+export const transactionByOwnerQuery = (address: string) => {
   const queryObject = {
     query: `
   { 
     transactions (
-      owners:["${address.toString()}"]
+      owners:["${address}"]
       sort: HEIGHT_DESC,
       first: 1,
     ) {
@@ -217,9 +216,7 @@ export const transactionByOwnerQuery = (address: ArweaveTransactionID) => {
   return queryObject;
 };
 
-export const LANDING_PAGE_TXID = new ArweaveTransactionID(
-  'oork_YifB3-JQQZg8EgMPQJytua_QCHKNmMqt5kmnCo',
-);
+export const LANDING_PAGE_TXID = 'oork_YifB3-JQQZg8EgMPQJytua_QCHKNmMqt5kmnCo';
 
 export const RESERVED_BREADCRUMB_TITLES = new Set([
   'Manage Assets',
@@ -232,7 +229,7 @@ export const ARIO_DISCORD_LINK = 'https://discord.com/invite/HGG52EtTc2';
 export const PERMANENT_DOMAIN_MESSAGE = 'Indefinite';
 
 export const METAMASK_URL = 'https://metamask.io/';
-export const ANT_CHANGELOG = antChangelog;
+export const ANT_CHANGELOG = '';
 
 export const KiB = 1024;
 export const MiB = 1024 * KiB;
