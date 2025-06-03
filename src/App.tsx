@@ -70,17 +70,13 @@ const RNPPage = React.lazy(() => import('./components/pages/RNPPage/RNPPage'));
 const sentryCreateBrowserRouter =
   Sentry.wrapCreateBrowserRouter(createHashRouter);
 
-// Wrapper component to provide useNavigate for ConnectWalletModal route
+// Wrapper for ConnectWalletModal to provide required props
 function ConnectWalletModalRoute() {
   const navigate = useNavigate();
   return (
     <Suspense fallback={<PageLoader loading={true} message={'Loading, please wait'} />}>
       <ConnectWalletModal
-        onConnect={(connector: any) => {
-          // handle successful connection
-          // ... your logic here ...
-          navigate(-1); // go back to previous page
-        }}
+        onConnect={() => navigate(-1)}
         onClose={() => navigate(-1)}
       />
     </Suspense>
@@ -368,7 +364,7 @@ function App() {
                 <RNPPage />
               </Suspense>
             }
-          />
+          />{' '}
           <Route
             path="/prices"
             element={
@@ -404,12 +400,14 @@ function App() {
   );
 
   return (
-    <Elements
-      key={turboNetwork.STRIPE_PUBLISHABLE_KEY}
-      stripe={stripePromise}
-    >
-      <RouterProvider router={router} />
-    </Elements>
+    <>
+      <Elements
+        key={turboNetwork.STRIPE_PUBLISHABLE_KEY}
+        stripe={stripePromise}
+      >
+        <RouterProvider router={router} />
+      </Elements>
+    </>
   );
 }
 
