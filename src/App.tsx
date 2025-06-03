@@ -7,9 +7,9 @@ const ARNS_API = "https://arns.ar.io/api/proxy/arns";
 
 interface NameInfo {
   name: string;
-  expiry: string;
-  resolver: string;
-  txId: string;
+  expiry: string | number | null | undefined;
+  resolver: string | null | undefined;
+  txId: string | null | undefined;
 }
 interface HistoryEvent {
   type: string;
@@ -26,12 +26,13 @@ interface OwnerResponse {
   names: NameInfo[];
 }
 
-function formatDate(expiry: string) {
+function formatDate(expiry: string | number | null | undefined) {
   if (!expiry || isNaN(Number(expiry))) return "-";
   const d = new Date(Number(expiry) * 1000);
+  if (d.getFullYear() < 1975) return "-";
   return d.toLocaleDateString();
 }
-function shortenAddr(addr: string) {
+function shortenAddr(addr: string | null | undefined) {
   if (!addr) return "-";
   return addr.length > 12 ? addr.slice(0, 6) + "..." + addr.slice(-4) : addr;
 }
@@ -160,14 +161,14 @@ const App: React.FC = () => {
           const { data } = await axios.get<NameInfo>(url, { timeout: 10000 });
           setNames([
             {
-              name: data.name,
-              expiry: data.expiry,
-              resolver: data.resolver,
-              txId: data.txId,
+              name: data.name ?? "",
+              expiry: data.expiry ?? "",
+              resolver: data.resolver ?? "",
+              txId: data.txId ?? "",
             },
           ]);
-          setSelectedName(data.name);
-          await fetchHistory(data.name);
+          setSelectedName(data.name ?? "");
+          await fetchHistory(data.name ?? "");
         } catch (e: any) {
           if (e.response?.status === 404) {
             setErr(
@@ -189,10 +190,10 @@ const App: React.FC = () => {
           if (data.names && data.names.length > 0) {
             setNames(
               data.names.map((n) => ({
-                name: n.name,
-                expiry: n.expiry,
-                resolver: n.resolver,
-                txId: n.txId,
+                name: n.name ?? "",
+                expiry: n.expiry ?? "",
+                resolver: n.resolver ?? "",
+                txId: n.txId ?? "",
               }))
             );
           } else {
@@ -229,20 +230,34 @@ const App: React.FC = () => {
     }
   };
 
+  // --- DEBUG: log raw names for troubleshooting ---
+  useEffect(() => {
+    if (names.length) {
+      // eslint-disable-next-line no-console
+      console.log("NAMES RAW DATA:", names);
+    }
+  }, [names]);
+
   const filteredNames = names.filter((n) => {
+    // Defensive: Ensure resolver is string
+    const resolver = (n.resolver ?? "").toString().toLowerCase();
     if (
       filterResolver &&
-      (!n.resolver ||
-        !n.resolver.toLowerCase().includes(filterResolver.toLowerCase()))
+      (!resolver || !resolver.includes(filterResolver.toLowerCase()))
     )
       return false;
+
+    // Defensive: Ensure expiry is a valid number
+    let expiryNum = Number(n.expiry);
+    if (isNaN(expiryNum) || !n.expiry) expiryNum = 0;
+
     if (filterExpiryFrom) {
-      const expiryDate = new Date(Number(n.expiry) * 1000);
+      const expiryDate = new Date(expiryNum * 1000);
       const fromDate = new Date(filterExpiryFrom);
       if (expiryDate < fromDate) return false;
     }
     if (filterExpiryTo) {
-      const expiryDate = new Date(Number(n.expiry) * 1000);
+      const expiryDate = new Date(expiryNum * 1000);
       const toDate = new Date(filterExpiryTo);
       if (expiryDate > toDate) return false;
     }
