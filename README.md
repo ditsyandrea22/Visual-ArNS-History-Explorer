@@ -23,20 +23,20 @@
 ### Prerequisites
 
 - Node.js (v18 or above recommended)
-- Yarn
+- npm (v7 or above recommended)
 
 ### Installation
 
 ```bash
 git clone https://github.com/ditsyandrea22/Visual-ArNS-History-Explorer.git
 cd Visual-ArNS-History-Explorer
-yarn install
+npm install
 ```
 
 ### Local Development
 
 ```bash
-yarn dev
+npm run dev
 ```
 
 Visit [http://localhost:5173](http://localhost:5173) to view the app.
@@ -44,7 +44,7 @@ Visit [http://localhost:5173](http://localhost:5173) to view the app.
 ### Build for Production
 
 ```bash
-yarn build
+npm run build
 ```
 
 ### Storybook
@@ -52,23 +52,19 @@ yarn build
 To run the Storybook UI component explorer:
 
 ```bash
-yarn storybook
+npm run storybook
 ```
 
-## Scripts
+## Development Preview
 
-- `yarn dev` – Start local development server
-- `yarn build` – Build for production
-- `yarn storybook` – Run Storybook
-- `yarn test` – Run tests
-- `yarn lint:check` – Lint codebase
-- `yarn format` – Format code using Prettier
+You can try a live development preview here:  
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://5173-ditsyandrea-visualarnsh-a91n50tw1dk.ws-us120.gitpod.io/)
 
 ## Tech Stack
 
 - **Frontend:** React, TypeScript, Vite
 - **UI:** Ant Design, Radix UI, Tailwind CSS, Framer Motion
-- **State/Data:** React Query, Redux (if used)
+- **State/Data:** React Query
 - **Blockchain:** Arweave SDK, ArNS, ArConnect, ArDrive
 - **Payments:** Stripe (optional)
 - **Testing:** Jest, Playwright, Testing Library
@@ -94,4 +90,4 @@ This project is currently **not licensed**. If you plan to use or contribute, pl
 
 ---
 
-© 2025 [ditsyandrea22](https://github.com/ditsyandrea22) 
+© 2025 [ditsyandrea22](https://github.com/ditsyandrea22) – [Project Homepage](https://visual-ar-ns-history-explorer.vercel.app)
