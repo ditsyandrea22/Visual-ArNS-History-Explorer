@@ -1,7 +1,8 @@
 import { AoARIORead, AoARIOWrite, AoClient } from '@ar.io/sdk/web';
 import { NETWORK_DEFAULTS } from '@src/utils/constants';
 
-import { ArweaveCompositeDataProvider } from '../../services/arweave/ArweaveCompositeDataProvider';
+// Removed import for ArweaveCompositeDataProvider (file is missing).
+// import { ArweaveCompositeDataProvider } from '../../services/arweave/ArweaveCompositeDataProvider';
 import { GlobalState } from '../contexts/GlobalState';
 
 export type GlobalAction =
@@ -9,7 +10,8 @@ export type GlobalAction =
       type: 'setGateway';
       payload: {
         gateway: string;
-        provider: ArweaveCompositeDataProvider;
+        // Make provider optional, since the file and type are missing.
+        provider?: any;
       };
     }
   | {
@@ -54,7 +56,10 @@ export const reducer = (
       return {
         ...state,
         gateway: action.payload.gateway,
-        arweaveDataProvider: action.payload.provider,
+        // Only set arweaveDataProvider if it exists in the payload
+        ...(action.payload.provider !== undefined && {
+          arweaveDataProvider: action.payload.provider,
+        }),
       };
     case 'setAONetwork':
       return {

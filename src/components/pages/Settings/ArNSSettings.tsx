@@ -8,9 +8,10 @@ import {
 import ArweaveID, {
   ArweaveIdTypes,
 } from '@src/components/layout/ArweaveID/ArweaveID';
-import { ArweaveCompositeDataProvider } from '@src/services/arweave/ArweaveCompositeDataProvider';
-import { ArweaveTransactionID } from '@src/services/arweave/ArweaveTransactionID';
-import { SimpleArweaveDataProvider } from '@src/services/arweave/SimpleArweaveDataProvider';
+// Removed missing imports:
+// import { ArweaveCompositeDataProvider } from '@src/services/arweave/ArweaveCompositeDataProvider';
+// import { ArweaveTransactionID } from '@src/services/arweave/ArweaveTransactionID';
+// import { SimpleArweaveDataProvider } from '@src/services/arweave/SimpleArweaveDataProvider';
 import { useGlobalState, useWalletState } from '@src/state';
 import { isArweaveTransactionID } from '@src/utils';
 import { ARIO_PROCESS_ID } from '@src/utils/constants';
@@ -56,20 +57,21 @@ function ArNSSettings() {
         payload: arIOContract,
       });
 
-      const arweave = new Arweave({
-        host: gateway,
-        protocol: 'https',
-      });
-      const arweaveDataProvider = new SimpleArweaveDataProvider(arweave);
+      // The following data providers are missing, so skip their initialization:
+      // const arweave = new Arweave({
+      //   host: gateway,
+      //   protocol: 'https',
+      // });
+      // const arweaveDataProvider = new SimpleArweaveDataProvider(arweave);
+      // const provider = new ArweaveCompositeDataProvider({
+      //   contract: arIOContract,
+      //   arweave: arweaveDataProvider,
+      // });
 
-      const provider = new ArweaveCompositeDataProvider({
-        contract: arIOContract,
-        arweave: arweaveDataProvider,
-      });
-
+      // Instead, just dispatch the gateway as before, without provider:
       dispatchGlobalState({
         type: 'setGateway',
-        payload: { gateway, provider },
+        payload: { gateway },
       });
     }
   }
@@ -96,7 +98,8 @@ function ArNSSettings() {
               Current ArNS Registry:{' '}
               {arioProcessId ? (
                 <ArweaveID
-                  id={new ArweaveTransactionID(arioProcessId)}
+                  // Use the registry address as a string directly
+                  id={arioProcessId}
                   characterCount={10}
                   shouldLink
                   type={ArweaveIdTypes.CONTRACT}

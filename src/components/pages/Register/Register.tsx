@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { useIsFocused, useRegistrationStatus } from '../../../hooks';
-import { ArweaveTransactionID } from '../../../services/arweave/ArweaveTransactionID';
+// Removed import { ArweaveTransactionID } from '../../../services/arweave/ArweaveTransactionID';
 import { useGlobalState } from '../../../state/contexts/GlobalState';
 import { useRegistrationState } from '../../../state/contexts/RegistrationState';
 import { useTransactionState } from '../../../state/contexts/TransactionState';
@@ -111,7 +111,8 @@ function RegisterNameForm() {
     }
   }, [name, domain]);
 
-  async function handleANTId(id?: ArweaveTransactionID) {
+  // Adjust handleANTId to use just the id string or object (no ArweaveTransactionID class)
+  async function handleANTId(id?: string) {
     if (!id) {
       dispatchRegisterState({
         type: 'setANTID',
@@ -179,7 +180,7 @@ function RegisterNameForm() {
         : domain;
     const buyRecordPayload: BuyRecordPayload = {
       name,
-      processId: antID?.toString() ?? 'atomic',
+      processId: antID ?? 'atomic',
       // TODO: move this to a helper function
       years:
         registrationType === TRANSACTION_TYPES.LEASE
@@ -450,7 +451,7 @@ function RegisterNameForm() {
                       if (isArweaveTransactionID(v.trim())) {
                         dispatchRegisterState({
                           type: 'setTargetId',
-                          payload: new ArweaveTransactionID(v.trim()),
+                          payload: v.trim(),
                         });
                       }
                       if (v.trim().length === 0) {

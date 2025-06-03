@@ -6,7 +6,7 @@ import { Loader } from '@src/components/layout';
 import ArweaveID, {
   ArweaveIdTypes,
 } from '@src/components/layout/ArweaveID/ArweaveID';
-import { ArweaveTransactionID } from '@src/services/arweave/ArweaveTransactionID';
+// Removed: import { ArweaveTransactionID } from '@src/services/arweave/ArweaveTransactionID';
 import {
   dispatchArIOContract,
   dispatchNewGateway,
@@ -338,8 +338,9 @@ function NetworkSettings() {
               <span className={labelClass}>
                 Current SU Address:{' '}
                 <span className="text-grey pl-2">
+                  {/* Use the SU address as a string, not as ArweaveTransactionID */}
                   <ArweaveID
-                    id={new ArweaveTransactionID(aoNetwork.ARIO.SCHEDULER)}
+                    id={aoNetwork.ARIO.SCHEDULER}
                     shouldLink
                     type={ArweaveIdTypes.ADDRESS}
                     characterCount={16}
